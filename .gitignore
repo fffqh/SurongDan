@@ -1,0 +1,6 @@
+# 忽略文件夹
+PIPENV_VENV_IN_PROJECT/
+data/
+# 忽略文件
+.env
+note.md
