@@ -2,30 +2,31 @@ import datetime
 import random
 import re
 
-from flask import request, jsonify, session, make_response
+from flask import request, jsonify, session, make_response, Blueprint
 
-from surongdan import db
 from surongdan.mail import *
+from surongdan.extensions import db
 from surongdan.models import user_table
+
+
+users_bp = Blueprint('users', __name__)
 
 # 存放用户对应的验证码
 mails_verified_list = {}
 
-
 ############ 设置路由 ###########
 # 首页，欢迎
-@app.route('/')
-def index():
-    name = request.cookies.get('name', 'Human')
-    response = '<h1>Hello %s</h1>' % name
-    if 'logged_in' in session:
-        response += '[Authenticated]'
-    else:
-        response += '[Not Authenticated]'
-    return response
+# @app.route('/')
+# def index():
+#     name = request.cookies.get('name', 'Human')
+#     response = '<h1>Hello %s</h1>' % name
+#     if 'logged_in' in session:
+#         response += '[Authenticated]'
+#     else:
+#         response += '[Not Authenticated]'
+#     return response
 
-
-@app.route('/users/get_verified', methods={'POST'})
+@users_bp.route('/get_verified', methods={'POST'})
 def verified():
     data = request.get_json()
     code = ''.join(random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890') for _ in range(6))
@@ -37,7 +38,7 @@ def verified():
 
 
 # 负责处理注册请求
-@app.route('/users/register', methods={'POST'})
+@users_bp.route('/register', methods={'POST'})
 def register():
     data = request.get_json()
     # print(data)
@@ -69,7 +70,7 @@ def register():
 
 
 # 找回密码
-@app.route('/users/findback', methods={'POST'})
+@users_bp.route('/findback', methods={'POST'})
 def find_back():
     data = request.get_json()
     # 判断email是否存在
@@ -94,7 +95,7 @@ def find_back():
 
 
 # 负责处理登录请求
-@app.route('/users/login', methods={'POST'})
+@users_bp.route('/login', methods={'POST'})
 def login():
     # 查询用户当前是否重复登录
     name = request.cookies.get('name')
@@ -124,7 +125,7 @@ def login():
     return response, 200
 
 # 负责处理登出请求
-@app.route('/users/logout', methods={'POST'})
+@users_bp.route('/logout', methods={'POST'})
 def logout():
     # 删除session和cookie
     if (not session.get('logged_in')):

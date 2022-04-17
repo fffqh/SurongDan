@@ -1,4 +1,4 @@
-from surongdan import db 
+from surongdan.extensions import db 
 
 class user_table(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)

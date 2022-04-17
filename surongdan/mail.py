@@ -2,24 +2,7 @@ import flask_mail
 from flask import Flask, current_app
 from threading import Thread
 
-from surongdan import app, mail_obj
-
-# app = Flask(__name__)
-# # SMTP服务器地址
-# app.config['MAIL_SERVER'] = 'smtp.163.com'
-# # SMTP服务器端口，一般为465
-# app.config['MAIL_PORT'] = 465
-# # 是否启用SSL加密
-# app.config['MAIL_USE_SSL'] = True
-# # 是否启用TLS加密
-# app.config['MAIL_USE_TLS'] = False
-# # 登入的邮箱，例如2731510961@qq.com，不能使用无法其他服务的邮箱，例如snbckcode@gmail.com不能使用smtp.qq.com
-# app.config['MAIL_USERNAME'] = 'exten224@163.com'
-# # 授权码，在设置smtp的时候有
-# app.config['MAIL_PASSWORD'] = 'WWLXZTCBXMLASSEV'
-# # 初始化对象
-# mail_obj = flask_mail.Mail(app)
-
+from surongdan.extensions import mail_obj
 
 # 异步发送邮件
 def send_async_email(app, msg):
@@ -41,7 +24,7 @@ def send_mail(to, subject, template, **kwargs):
     msgobject = flask_mail.Message(
         subject,
         body="示例邮件的内容",
-        sender=app.config['MAIL_USERNAME'],
+        sender=app1.config['MAIL_USERNAME'],
         recipients=[to]
     )
     # 浏览器接受显示内容
