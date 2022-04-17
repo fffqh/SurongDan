@@ -4,15 +4,15 @@ import re
 
 from flask import request, jsonify, session, make_response, Blueprint
 
-from surongdan.mail import *
 from surongdan.extensions import db
+from surongdan.mail import *
 from surongdan.models import user_table
-
 
 users_bp = Blueprint('users', __name__)
 
 # 存放用户对应的验证码
 mails_verified_list = {}
+
 
 ############ 设置路由 ###########
 # 首页，欢迎
@@ -50,7 +50,8 @@ def register():
     if user_table.query.filter_by(user_email=data['user_email']).first():
         return jsonify({'fault': 'user_email is invalid!'}), 202
     # 判断验证码是否正确
-    if data['user_verify'] != mails_verified_list[data['user_email']][0]:
+    if data['user_email'] not in mails_verified_list.keys() or data['user_verify'] != \
+            mails_verified_list[data['user_email']][0]:
         return jsonify({'fault': 'user_verify is invalid!'}), 202
     # 判断验证码是否超时，超过十分钟则失效
     min = (datetime.datetime.now() - mails_verified_list[data['user_email']][1]).seconds / 60
@@ -78,7 +79,8 @@ def find_back():
     if u is None:
         return jsonify({'fault': 'user_email is invalid!'}), 202
     # 判断验证码是否正确
-    if data['user_verify'] != mails_verified_list[data['user_email']][0]:
+    if data['user_email'] not in mails_verified_list.keys() or data['user_verify'] != \
+            mails_verified_list[data['user_email']][0]:
         return jsonify({'fault': 'user_verify is invalid!'}), 202
     # 判断验证码是否超时，超过十分钟则失效
     min = (datetime.datetime.now() - mails_verified_list[data['user_email']][1]).seconds / 60
@@ -123,6 +125,7 @@ def login():
     response = make_response(jsonify({'user_id': u.user_id, 'user_name': u.user_name}))
     response.set_cookie('name', u.user_name)
     return response, 200
+
 
 # 负责处理登出请求
 @users_bp.route('/logout', methods={'POST'})
