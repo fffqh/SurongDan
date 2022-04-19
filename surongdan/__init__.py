@@ -9,7 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from surongdan.views.users import users_bp
 from surongdan.extensions import db, mail_obj
 from surongdan.settings import config
-# from surongdan.models import user_table 
+from surongdan.models import user_table 
 
 basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
@@ -41,6 +41,12 @@ def register_commands(app):
     @app.cli.command()
     def initdb():
         db.create_all()
+        u = user_table(user_name='admin',
+                    user_email='admin@qq.com',
+                    user_status=True)
+        u.set_password('admin123')
+        db.session.add(u)
+        db.session.commit()
         click.echo("Initialized database.")
 
     @app.cli.command()

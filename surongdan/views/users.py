@@ -16,56 +16,57 @@ mails_verified_list = {}
 
 ############ 设置路由 ###########
 # 首页，欢迎
-# @app.route('/')
-# def index():
-#     name = request.cookies.get('name', 'Human')
-#     response = '<h1>Hello %s</h1>' % name
-#     if 'logged_in' in session:
-#         response += '[Authenticated]'
-#     else:
-#         response += '[Not Authenticated]'
-#     return response
+@users_bp.route('/')
+def index():
+    name = request.cookies.get('name', 'Human')
+    response = '<h1>Hello %s</h1>' % name
+    if 'logged_in' in session:
+        response += '[Authenticated]'
+    else:
+        response += '[Not Authenticated]'
+    return response
 
 @users_bp.route('/get_verified', methods={'POST'})
 def verified():
     data = request.get_json()
+    print(data)
     code = ''.join(random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890') for _ in range(6))
     user_email = data['user_email']
     send_mail(user_email, '验证码', '您的验证码为' + code)
     # 记录验证码信息，前一个为验证码，后一个为验证码发出时的时间
     mails_verified_list[user_email] = (code, datetime.datetime.now())
-    return "", 200
-
+    return jsonify({'info':'ok'}), 200
 
 # 负责处理注册请求
 @users_bp.route('/register', methods={'POST'})
 def register():
     data = request.get_json()
-    # print(data)
+    print(data)
     # print(data['user_name'])
     # 判断name是否重复
     if user_table.query.filter_by(user_name=data['user_name']).first():
-        return jsonify({'fault': 'user_name is invalid!'}), 202
+        return jsonify({'fault': 'user_name is invalid!'}), 401
     # 判断email是否重复
     if user_table.query.filter_by(user_email=data['user_email']).first():
-        return jsonify({'fault': 'user_email is invalid!'}), 202
+        return jsonify({'fault': 'user_email is invalid!'}), 401
     # 判断验证码是否正确
     if data['user_email'] not in mails_verified_list.keys() or data['user_verify'] != \
             mails_verified_list[data['user_email']][0]:
-        return jsonify({'fault': 'user_verify is invalid!'}), 202
+        return jsonify({'fault': 'user_verify is invalid!'}), 403
     # 判断验证码是否超时，超过十分钟则失效
     min = (datetime.datetime.now() - mails_verified_list[data['user_email']][1]).seconds / 60
     if min > 10:
-        return jsonify({'fault': 'user_verify is overdue!'}), 202
+        return jsonify({'fault': 'user_verify is overdue!'}), 403
 
     u = user_table(user_name=data['user_name'],
                    user_email=data['user_email'],
-                   user_pwd=data['user_pwd'],
+                   # user_pwd=data['user_pwd'],
                    user_status=True)
+    u.set_password(data['user_pwd'])
     db.session.add(u)
     db.session.commit()
     if (u.user_id == None):
-        return jsonify({'fault': 'something wrong'}), 202
+        return jsonify({'fault': 'something wrong'}), 500
     else:
         return jsonify({'user_id': u.user_id, 'user_name': u.user_name}), 201
 
@@ -103,10 +104,11 @@ def login():
     name = request.cookies.get('name')
     print(name)
     if name and session.get('logged_in'):
-        return jsonify({'fault': 'You have already logged in'}), 202
+        return jsonify({'fault': 'You have already logged in'}), 204
 
     email_str = r'^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}$'
     data = request.get_json()
+    print(data)
     u = None
     if re.match(email_str, data['user_info']):
         u = user_table.query.filter_by(user_email=data['user_info']).first()
@@ -114,11 +116,13 @@ def login():
         u = user_table.query.filter_by(user_name=data['user_info']).first()
     # 用户信息检查
     if (u == None):
-        return jsonify({'fault': 'user info error!'}), 203
-    if (u.user_pwd != data['user_pwd']):
-        return jsonify({'fault': 'user info error!'}), 203
+        return jsonify({'fault': 'user info error!'}), 401
+    if (u.validate_password(data['user_pwd']) == False):
+        return jsonify({'fault': 'user info error!'}), 401
+    # if (u.user_pwd != data['user_pwd']):
+    #     return jsonify({'fault': 'user info error!'}), 401
     if (u.user_status == False):
-        return jsonify({'fault': 'user is invalid!'}), 204
+        return jsonify({'fault': 'user is invalid!'}), 403
 
     # 登录成功
     session['logged_in'] = True
