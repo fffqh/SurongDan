@@ -43,7 +43,8 @@ def register_commands(app):
         db.create_all()
         u = user_table(user_name='admin',
                     user_email='admin@qq.com',
-                    user_status=True)
+                    user_status=True,
+                    user_is_admin=True)
         u.set_password('admin123')
         db.session.add(u)
         db.session.commit()
