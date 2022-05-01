@@ -27,7 +27,7 @@ class project_table(db.Model):
     project_info        = db.Column(db.Text, nullable=True)
     project_dtime       = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     # 项目结构 : 序列化的layer_id
-    project_struture    = db.Column(db.PickleType, nullable=False)
+    project_structure    = db.Column(db.PickleType, nullable=True)
     # 输入输出
     project_dataset_id  = db.Column(db.Integer, db.ForeignKey('dataset_table.dataset_id'))
     project_outpath     = db.Column(db.String(260), nullable=False)
@@ -38,7 +38,7 @@ class project_table(db.Model):
 class layer_table(db.Model):
     __tablename__ = 'layer_table'
     # 联合主键 (网络层id, 项目id)
-    layer_id         = db.Column(db.Integer, primary_key=True)
+    layer_id         = db.Column(db.Integer, autoincrement=True, primary_key=True)
     layer_project_id = db.Column(db.Integer, db.ForeignKey('project_table.project_id'), primary_key=True)
     # 位置参数
     layer_x          = db.Column(db.Float, nullable=False)
@@ -50,7 +50,7 @@ class layer_table(db.Model):
     # 原型模块id
     layer_dm_id      = db.Column(db.Integer, db.ForeignKey('module_def_table.module_def_id'))
     # 网络层参数
-    layer_param_list = db.Column(db.Text, nullable=False)
+    layer_param_list = db.Column(db.PickleType, nullable=False)
     layer_param_num  = db.Column(db.Integer, nullable=False)
 
 class module_def_table(db.Model):
@@ -63,7 +63,6 @@ class module_def_table(db.Model):
     module_def_param_num = db.Column(db.Integer, nullable=False)
     # 模块的代码模板
     module_def_precode   = db.Column(db.Text, nullable=False)
-
 
 class module_custom_table(db.Model):
     __tablename__           = 'module_custom_table'
