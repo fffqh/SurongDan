@@ -17,6 +17,8 @@ class BaseConfig(object):
     MAIL_USERNAME = 'exten224@163.com'
     # 授权码，在设置smtp的时候有
     MAIL_PASSWORD = 'WWLXZTCBXMLASSEV'
+    # 输出目录根路径
+    SURONG_OUT_PATH = os.getenv('SURONG_OUT_PATH', './out')
 
 class DevelopmentCOnfig(BaseConfig):
     # 数据库配置
