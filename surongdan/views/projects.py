@@ -5,7 +5,7 @@ from flask import current_app
 from flask import request, jsonify, Blueprint
 
 from surongdan.extensions import db
-from surongdan.models import project_table, layer_table
+from surongdan.models import project_table, layer_table, module_def_table
 
 projects_bp = Blueprint('projects', __name__)
 
@@ -101,10 +101,9 @@ def save_structure():
     return jsonify({'project_id': p.project_id, 'project_layer_lst': new_slst}), 201
 
 
-# 复制工程接口：projects/delete_proj
+# 删除工程接口：projects/delete_proj
 @projects_bp.route('/delete_proj', methods={'POST'})
 def delete_proj():
-    config = current_app.config
     data = request.get_json()
     print(data)
     # 用户是否登录的检查 ## 待完成
@@ -119,4 +118,48 @@ def delete_proj():
     # 删除数据库中的工程
     with db.auto_commit_db():
         db.session.delete(p)
-    return jsonify({'message': "deleted successfully"}), 200
+    return jsonify({'msg': "delete successful"}), 200
+
+
+# 添加默认模块：projects/add_def_md
+@projects_bp.route('/add_def_md', methods={'POST'})
+def add_def_md():
+    data = request.get_json()
+    print(data)
+    # 用户是否登录的检查以及用户是否为管理员账号的检查 ## 待完成
+    # u = user_table.query.get(int(session['user_id']))
+    # if not u.user_is_admin:
+    #    return jsonify({'fault': 'User is not an administrator'}), 403
+    # 数据库处理
+    p = module_def_table(module_def_name=data['module_def_name'],
+                         module_def_desc=data['module_def_desc'],
+                         module_def_param_num=data['module_def_param_num'],
+                         module_def_precode=data['module_def_precode']
+                         )
+    with db.auto_commit_db():
+        db.session.add(p)
+    if p.module_def_id is None:
+        return jsonify({'fault': 'something wrong'}), 500
+    else:
+        return jsonify({'module_def_id': p.module_def_id, 'msg': 'create success'}), 201
+
+
+# 删除默认模块：projects/delete_def_md
+# 并非实际删除，而是将其设定为用户不可见
+@projects_bp.route('/delete_def_md', methods={'POST'})
+def delete_def_md():
+    data = request.get_json()
+    print(data)
+    # 用户是否登录的检查以及用户是否为管理员账号的检查 ## 待完成
+    # u = user_table.query.get(int(session['user_id']))
+    # if not u.user_is_admin:
+    #    return jsonify({'fault': 'User is not an administrator'}), 403
+    # 数据库处理
+    p = module_def_table.query.get(int(data['module_def_id']))
+    if p is None:
+        return jsonify({'fault': 'def_module is not exist'}), 404
+
+    # 更改可见性
+    with db.auto_commit_db():
+        p.module_def_invisible = True
+    return jsonify({'msg': 'delete success'}), 200

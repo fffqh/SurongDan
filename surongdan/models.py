@@ -72,6 +72,8 @@ class module_def_table(db.Model):
     module_def_param_num = db.Column(db.Integer, nullable=False)
     # 模块的代码模板
     module_def_precode = db.Column(db.Text, nullable=False)
+    # 是否是用户不可见
+    module_def_invisible = db.Column(db.Boolean, nullable=False, default=False)
 
 
 class module_custom_table(db.Model):
@@ -85,6 +87,8 @@ class module_custom_table(db.Model):
     module_custom_struture = db.Column(db.PickleType, nullable=False)
     # 自定义模块的参数总数
     module_custom_param_num = db.Column(db.Integer, nullable=False)
+    # 是否是用户不可见
+    module_custom_invisible = db.Column(db.Boolean, nullable=False, default=False)
 
 
 class dataset_table(db.Model):
