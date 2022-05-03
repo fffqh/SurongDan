@@ -2,7 +2,7 @@ import datetime
 import pickle
 
 from flask import current_app
-from flask import request, jsonify, Blueprint
+from flask import request, jsonify, Blueprint,g
 
 from surongdan.extensions import db
 from surongdan.models import project_table, layer_table, module_def_table, module_custom_table
@@ -224,6 +224,43 @@ def delete_def_md():
     return jsonify({'msg': 'delete success'}), 200
 
 
+# 获得工程列表接口
+@projects_bp.route('/getlist', methods={'GET'})
+def getlist():
+    # 在登录成功之后记录用户信息到flask.g.user
+    # 查询project_table到所有user_id相同者创建的项目
+    current_uid = g.user.user_id
+    proj_list = project_table.query_prolist(current_uid)
+    if proj_list!=None:
+        return jsonify({'project_list': proj_list}), 201
+    else:
+        return jsonify({'fault': 'Projects are not exist'}), 403
+
+# 获得工程
+@projects_bp.route('/getproj', methods={'GET'})
+def getproj():
+    # 在登录成功之后记录用户信息到全局flask.g.user
+    # 查询project_table到所有user_id相同者创建的项目
+    data = request.get_json()
+    print(data)# using for debug
+    current_proid = int(data['project_id'])
+    current_uid = g.user.user_id
+    proj_pro = project_table.query_pro(current_uid,current_proid)
+    if proj_pro!=None:
+        return jsonify({'project_id' : proj_pro.project_id,
+                        'project_user_id':proj_pro.project_user_id,
+                        'project_name':proj_pro.project_name,
+                        'project_info':proj_pro.project_info,
+                        'project_dtime':proj_pro.project_dtime,
+                        'project_structure':proj_pro.project_structure,
+                        'project_dataset_id':proj_pro.project_dataset_id,
+                        'project_outpath':proj_pro.project_outpath,
+                        'project_code':proj_pro.project_code,
+                        'project_status':proj_pro.project_status}), 200
+    else:
+        return jsonify({'fault': 'Projects are not accessible'}), 403
+
+
 # 添加自定义模块：/projects/add_cus_md
 @projects_bp.route('/add_cus_md', methods={'POST'})
 def add_cus_md():
@@ -289,3 +326,4 @@ def delete_cus_md():
     with db.auto_commit_db():
         p.module_custom_invisible = True
     return jsonify({'msg': 'delete success'}), 200
+
