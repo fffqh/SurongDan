@@ -2,7 +2,7 @@ import datetime
 import random
 import re
 
-from flask import request, jsonify, session, make_response, Blueprint
+from flask import request, jsonify, session, make_response, Blueprint, g
 
 from surongdan.extensions import db
 from surongdan.mail import *
@@ -125,6 +125,8 @@ def login():
         return jsonify({'fault': 'user is invalid!'}), 403
 
     # 登录成功
+    # 登陆成功，在全局变量中储存用户信息
+    g.user = u
     session['logged_in'] = True
     response = make_response(jsonify({'user_id': u.user_id, 'user_name': u.user_name}))
     response.set_cookie('name', u.user_name)
