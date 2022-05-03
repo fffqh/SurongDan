@@ -46,8 +46,7 @@ class layer_table(db.Model):
     __tablename__ = 'layer_table'
     # 联合主键 (网络层id, 项目id)
     layer_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-    layer_project_id = db.Column(db.Integer, db.ForeignKey('project_table.project_id', ondelete='CASCADE'),
-                                 primary_key=True)
+    layer_project_id = db.Column(db.Integer, db.ForeignKey('project_table.project_id', ondelete='CASCADE'))
     # 位置参数
     layer_x = db.Column(db.Float, nullable=False)
     layer_y = db.Column(db.Float, nullable=False)
