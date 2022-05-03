@@ -5,7 +5,7 @@ from flask import current_app
 from flask import request, jsonify, Blueprint,g
 
 from surongdan.extensions import db
-from surongdan.models import project_table, layer_table, module_def_table
+from surongdan.models import project_table, layer_table, module_def_table, module_custom_table
 
 projects_bp = Blueprint('projects', __name__)
 
@@ -101,6 +101,65 @@ def save_structure():
     return jsonify({'project_id': p.project_id, 'project_layer_lst': new_slst}), 201
 
 
+# 复制工程接口：projects/copy_proj
+@projects_bp.route('/copy_proj', methods={'POST'})
+def copy_proj():
+    data = request.get_json()
+    print(data)
+    # 用户是否登录的检查 ## 待完成
+    p = project_table.query.get(int(data['project_id']))
+    # 检查项目是否存在
+    if p is None:
+        return jsonify({'fault': 'project_id is not exist'}), 404
+    # 用户是否是被复制项目拥有者的检查 ##待检查
+    # if session['user_id'] != p.project_user_id:
+    #   return jsonify({'fault':'user doesn't match the project'}),403
+
+    # 对新项进行赋值
+    new_p = project_table(project_user_id=p.project_user_id,
+                          project_name=p.project_name + ' - 副本',
+                          project_info=p.project_info,
+                          project_dtime=p.project_dtime,
+                          project_dataset_id=p.project_dataset_id,
+                          project_outpath=p.project_outpath,
+                          project_code=p.project_code,
+                          project_status=p.project_status)
+
+    project_structure = pickle.loads(p.project_structure)
+    # 依次新建所有的layer
+    layer_obj = []  # 存储layer的列表，之后一次性提交所有的数据库更改，便于回滚
+    for i in range(len(project_structure)):
+        old_layer = layer_table.query.get(int(project_structure[i]))
+        new_layer = layer_table(layer_x=old_layer.layer_x,
+                                layer_y=old_layer.layer_y,
+                                layer_is_custom=old_layer.layer_is_custom,
+                                layer_cm_id=old_layer.layer_cm_id,
+                                layer_dm_id=old_layer.layer_dm_id,
+                                layer_param_list=old_layer.layer_param_list,
+                                layer_param_num=old_layer.layer_param_num,
+
+                                )
+        layer_obj.append(new_layer)
+    # 提交数据库，project的提交与layer一起进行，方便进行回滚,避免出现失效的project数据
+    with db.auto_commit_db():
+        db.session.add(new_p)
+        for m in layer_obj:
+            db.session.add(m)
+            m.layer_project_id = new_p.project_id
+
+    if new_p.project_id is None:
+        return jsonify({'fault': 'new project failed'}), 500
+    # 更新project的结构数据
+    lay_list = []
+    for m in layer_obj:
+        if m.layer_id is None:
+            return jsonify({'fault': 'new layer failed'}), 500
+        lay_list.append(m.layer_id)
+    with db.auto_commit_db():
+        new_p.project_structure = pickle.dumps(lay_list)
+    return ({'project_id': new_p.project_id, 'msg': 'copy success'}), 201
+
+
 # 删除工程接口：projects/delete_proj
 @projects_bp.route('/delete_proj', methods={'POST'})
 def delete_proj():
@@ -164,6 +223,7 @@ def delete_def_md():
         p.module_def_invisible = True
     return jsonify({'msg': 'delete success'}), 200
 
+
 # 获得工程列表接口
 @projects_bp.route('/getlist', methods={'GET'})
 def getlist():
@@ -199,3 +259,71 @@ def getproj():
                         'project_status':proj_pro.project_status}), 200
     else:
         return jsonify({'fault': 'Projects are not accessible'}), 403
+
+
+# 添加自定义模块：/projects/add_cus_md
+@projects_bp.route('/add_cus_md', methods={'POST'})
+def add_cus_md():
+    data = request.get_json()
+    print(data)
+    # 用户是否登录的检查 ## 待完成
+    # 数据库处理
+    p = module_custom_table(module_custom_user_id=data['module_custom_user_id'],
+                            # module_custom_user_id=session['user_id'],
+                            module_custom_name=data['module_custom_name'],
+                            module_custom_desc=data['module_custom_desc'],
+                            module_custom_param_num=data['module_custom_param_num']
+                            )
+    # 判断结构是否正确
+    para_sum = 0
+    for m in data['module_custom_struture']:
+        if m['module_is_custom']:
+            mp = module_custom_table.query.get(int(m['module_id']))
+        else:
+            mp = module_def_table.query.get(int(m['module_id']))
+        # 无对应模块
+        if mp is None:
+            return jsonify({'fault': 'The included module does not exist'}), 400
+        # 模块不可被调用
+        if m['module_is_custom'] and mp.module_custom_invisible:
+            return jsonify({'fault': 'the module is invisible'}), 400
+        elif not m['module_is_custom'] and mp.module_def_invisible:
+            return jsonify({'fault': 'the module is invisible'}), 400
+        # 模块参数个数与请求的参数个数不符
+        if m['module_is_custom'] and mp.module_custom_param_num != len(m['module_param_list']):
+            return jsonify({'fault': 'Parameter number does not match'}), 400
+        elif not m['module_is_custom'] and mp.module_def_param_num != len(m['module_param_list']):
+            return jsonify({'fault': 'Parameter number does not match'}), 400
+        para_sum += len(m['module_param_list'])
+    # 总参数个数是否符合
+    if para_sum != data['module_custom_param_num']:
+        return jsonify({'fault': 'The total number of parameters does not match'}), 400
+    # 将模块结构转化为pickle存储
+    p.module_custom_struture = pickle.dumps(data['module_custom_struture'])
+    # 更新数据库
+    with db.auto_commit_db():
+        db.session.add(p)
+    if p.module_custom_id is None:
+        return jsonify({'fault': 'something wrong'}), 500
+    else:
+        return jsonify({'module_custom_id': p.module_custom_id, 'msg': 'create success'}), 201
+
+
+# 删除自定义模块：projects/delete_cus_md
+# 并非实际删除，而是将其设定为用户不可见
+@projects_bp.route('/delete_cus_md', methods={'POST'})
+def delete_cus_md():
+    data = request.get_json()
+    print(data)
+    # 数据库处理
+    p = module_custom_table.query.get(int(data['module_custom_id']))
+    if p is None:
+        return jsonify({'fault': 'def_module is not exist'}), 404
+    # 用户是否是模块的拥有者的检查 ## 待完成
+    # if p.module_custom_user_id != session['user_id']:
+    #    return jsonify({'fault': 'user doesn't match the module'}), 403
+    # 更改可见性
+    with db.auto_commit_db():
+        p.module_custom_invisible = True
+    return jsonify({'msg': 'delete success'}), 200
+
