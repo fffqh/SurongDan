@@ -171,7 +171,7 @@ def getlist():
     # 查询project_table到所有user_id相同者创建的项目
     current_uid = g.user.user_id
     proj_list = project_table.query_prolist(current_uid)
-    if proj_list:
+    if proj_list!=None:
         return jsonify({'project_list': proj_list}), 201
     else:
         return jsonify({'fault': 'Projects are not exist'}), 403
@@ -179,14 +179,14 @@ def getlist():
 # 获得工程
 @projects_bp.route('/getproj', methods={'GET'})
 def getproj():
-    # 在登录成功之后记录用户信息到flask.g.user
+    # 在登录成功之后记录用户信息到全局flask.g.user
     # 查询project_table到所有user_id相同者创建的项目
     data = request.get_json()
     print(data)# using for debug
     current_proid = int(data['project_id'])
     current_uid = g.user.user_id
     proj_pro = project_table.query_pro(current_uid,current_proid)
-    if proj_pro:
+    if proj_pro!=None:
         return jsonify({'project_id' : proj_pro.project_id,
                         'project_user_id':proj_pro.project_user_id,
                         'project_name':proj_pro.project_name,
