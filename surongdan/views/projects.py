@@ -2,7 +2,7 @@ import datetime
 import pickle
 
 from flask import current_app
-from flask import request, jsonify, Blueprint,g
+from flask import request, jsonify, Blueprint
 
 from surongdan.extensions import db
 from surongdan.models import project_table, layer_table, module_def_table, module_custom_table
@@ -227,19 +227,21 @@ def delete_def_md():
 # 获得工程列表接口
 @projects_bp.route('/getlist', methods={'GET'})
 def getlist():
-    # 在登录成功之后记录用户信息到flask.g.user
+    # 在登录成功之后记录用户信息到session
     # 查询project_table到所有user_id相同者创建的项目
-    current_uid = g.user.user_id
+    current_uid = session.get("user_id")
     proj_list = project_table.query_prolist(current_uid)
     if proj_list!=None:
         return jsonify({'project_list': proj_list}), 201
     else:
         return jsonify({'fault': 'Projects are not exist'}), 403
 
+
+
 # 获得工程
-@projects_bp.route('/getproj', methods={'GET'})
+@projects_bp.route('/getproj', methods={'GET','POST'})
 def getproj():
-    # 在登录成功之后记录用户信息到全局flask.g.user
+    # 在登录成功之后记录用户信息到session
     # 查询project_table到所有user_id相同者创建的项目
     data = request.get_json()
     print(data)# using for debug
@@ -253,6 +255,7 @@ def getproj():
                         'project_info':proj_pro.project_info,
                         'project_dtime':proj_pro.project_dtime,
                         'project_structure':proj_pro.project_structure,
+                        'project_graph': proj_pro.project_graph,
                         'project_dataset_id':proj_pro.project_dataset_id,
                         'project_outpath':proj_pro.project_outpath,
                         'project_code':proj_pro.project_code,
