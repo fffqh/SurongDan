@@ -166,11 +166,11 @@ def delete_proj():
     data = request.get_json()
     print(data)
     # 用户是否登录的检查 ## 待完成
+
     # 数据库处理
     p = project_table.query.get(int(data['project_id']))
     if p is None:
         return jsonify({'fault': 'project_id is not exist'}), 404
-
     # 检查是否为本人删除 ##待完成
     # if session['user_id'] != p.project_user_id:
     #   return jsonify({'fault':'user doesn't match the project'}),403
