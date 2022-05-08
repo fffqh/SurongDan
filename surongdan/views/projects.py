@@ -1,11 +1,11 @@
 import datetime
 import pickle
-
+import re
 from flask import current_app
-from flask import request, jsonify, Blueprint
+from flask import request, jsonify, Blueprint, g, session
 
 from surongdan.extensions import db
-from surongdan.models import project_table, layer_table, module_def_table, module_custom_table
+from surongdan.models import project_table, layer_table, module_def_table, module_custom_table, dataset_table
 
 projects_bp = Blueprint('projects', __name__)
 
@@ -231,35 +231,32 @@ def getlist():
     # 查询project_table到所有user_id相同者创建的项目
     current_uid = session.get("user_id")
     proj_list = project_table.query_prolist(current_uid)
-    if proj_list!=None:
+    if proj_list != None:
         return jsonify({'project_list': proj_list}), 201
     else:
         return jsonify({'fault': 'Projects are not exist'}), 403
 
-
-
 # 获得工程
-@projects_bp.route('/getproj', methods={'GET','POST'})
+@projects_bp.route('/getproj', methods={'GET', 'POST'})
 def getproj():
     # 在登录成功之后记录用户信息到session
     # 查询project_table到所有user_id相同者创建的项目
     data = request.get_json()
-    print(data)# using for debug
+    print(data)  # using for debug
     current_proid = int(data['project_id'])
     current_uid = g.user.user_id
-    proj_pro = project_table.query_pro(current_uid,current_proid)
-    if proj_pro!=None:
-        return jsonify({'project_id' : proj_pro.project_id,
-                        'project_user_id':proj_pro.project_user_id,
-                        'project_name':proj_pro.project_name,
-                        'project_info':proj_pro.project_info,
-                        'project_dtime':proj_pro.project_dtime,
-                        'project_structure':proj_pro.project_structure,
-                        'project_graph': proj_pro.project_graph,
-                        'project_dataset_id':proj_pro.project_dataset_id,
-                        'project_outpath':proj_pro.project_outpath,
-                        'project_code':proj_pro.project_code,
-                        'project_status':proj_pro.project_status}), 200
+    proj_pro = project_table.query_pro(current_uid, current_proid)
+    if proj_pro != None:
+        return jsonify({'project_id': proj_pro.project_id,
+                        'project_user_id': proj_pro.project_user_id,
+                        'project_name': proj_pro.project_name,
+                        'project_info': proj_pro.project_info,
+                        'project_dtime': proj_pro.project_dtime,
+                        'project_structure': proj_pro.project_structure,
+                        'project_dataset_id': proj_pro.project_dataset_id,
+                        'project_outpath': proj_pro.project_outpath,
+                        'project_code': proj_pro.project_code,
+                        'project_status': proj_pro.project_status}), 200
     else:
         return jsonify({'fault': 'Projects are not accessible'}), 403
 
@@ -330,3 +327,88 @@ def delete_cus_md():
         p.module_custom_invisible = True
     return jsonify({'msg': 'delete success'}), 200
 
+
+# 添加默认模块：projects/get-def-cos-module
+# 加载时，作为侧边栏的基础元素出现
+@projects_bp.route('/get_def_module', methods={'GET'})
+def get_def_md():
+    datas = module_def_table.query.filter_by(module_def_invisible=False)
+    print(datas)
+    def_data = []
+    for defs in datas:
+        def_data.append({'module_def_id': defs.module_def_id, 'module_def_name': defs.module_def_name,
+                         'module_def_param_num': defs.module_def_param_num})
+    return jsonify({'def_data': def_data})
+
+
+@projects_bp.route('/get_custom_module', methods={'GET'})
+def get_cus_md():
+    u_id = session.get('user_id')
+    datas = module_custom_table.query.filter_by(module_custom_invisible=False, module_custom_user_id=u_id).all()
+    cos_data = []
+    for coss in datas:
+        cos_data.append(
+            {'module_custom_id': coss.module_custom_id, 'module_custom_name': coss.module_custom_name,
+             'module_custom_desc': coss.module_custom_desc, 'module_custom_param_num': coss.module_custom_param_num})
+    return jsonify({'cos_data': cos_data}), 201
+
+
+# 生成代码
+@projects_bp.route('/generatecode', methods={'POST'})
+def generate_code():
+    # 获得json中的项目id
+    data = request.get_json()
+    pro_id = int(data['project_id'])
+    p = project_table.query.get(pro_id)
+    if p is None:
+        return jsonify({'msg': 'project is not exist !'})
+
+    # 读取struct结构
+    pro_struct = pickle.loads(p.project_structure)
+    print(pro_struct)
+    # 准备数据集??
+    # data_set_id = p.project_dataset_id
+    # data_set = dataset_table.query.filter(dataset_table.dataset_id == data_set_id)
+    # data_set_path = str(data_set['dataset_path'])
+    # code集合
+    pro_code = ''
+    # 输出结果路径
+    pro_outpath = str(p.project_outpath)
+    # 遍历struct查找layer_id
+    for layer_id in pro_struct:
+        layer_now = layer_table.query.get(layer_id)
+        if layer_now is None:
+            return jsonify({'fault': 'The layer is not exist'}), 402
+        if int(layer_now.layer_param_num) != len(layer_now.layer_param_list):
+            return jsonify({'fault': 'Parameters is inconsistent with the input module'}), 401
+        # 读取参数
+        layer_n_para = layer_now.layer_param_list
+        if not layer_now.layer_is_custom:
+            # 默认模块处理
+            layer_mod_id = int(layer_now.layer_dm_id)
+            layer_mod = module_def_table.query.get(layer_mod_id)
+            if len(layer_now.param_list)!=len(layer_mod.module_def_param_num):
+                return jsonify({'fault': 'Layer_para is inconsistent with the module_para'}), 402
+            layer_n_code = ''
+            layer_n_code = str(layer_mod.module_def_code)
+            for paras in layer_n_para:
+                # 默认参数不大于10个
+                layer_n_code = re.sub(r'\$[0-9]', str(paras), layer_n_code, 1)
+        else:
+            # 自定义模块
+            layer_mod_id = layer_now.layer_cm_id
+            layer_mod = module_custom_table.query.get(layer_mod_id)
+            if len(layer_now.param_list) != len(layer_mod.module_cus_param_num):
+                return jsonify({'fault': 'Layer_para is inconsistent with the module_para'}), 402
+            layer_n_code = ''
+            layer_n_code = str(layer_mod.module_cus_code)
+            for paras in layer_n_para:
+                # 默认参数不大于10个
+                layer_n_code = re.sub(r'\$[0-9]', str(paras), layer_n_code, 1)
+        # 当前layer生成的代码进行保存
+        pro_code = pro_code + layer_n_code + "\n"
+    # 讲生成的代码进行保存到输出路径
+    fb = open(pro_outpath + 'outfile.txt', mode='w', encoding='utf-8')
+    fb.write(pro_code)
+    fb.close()
+    return jsonify({'msg': 'Generate Successful ! At' + pro_outpath + 'outfile.txt'}), 200
