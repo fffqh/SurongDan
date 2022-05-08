@@ -105,7 +105,6 @@ def login():
     print(name)
     if name and session.get('logged_in'):
         return jsonify({'fault': 'You have already logged in'}), 204
-
     email_str = r'^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}$'
     data = request.get_json()
     print(data)
@@ -128,6 +127,7 @@ def login():
     # 登陆成功，在全局变量中储存用户信息
     g.user = u
     session['logged_in'] = True
+    session['user_id'] = u.user_id
     response = make_response(jsonify({'user_id': u.user_id, 'user_name': u.user_name}))
     response.set_cookie('name', u.user_name)
     return response, 200
@@ -142,6 +142,7 @@ def logout():
         response.delete_cookie('name')
         return response, 202
     session.pop('logged_in')
+    session.pop('user_id')
     response = jsonify({'info': 'successful logout'})
     response.delete_cookie('name')
     return response, 200
