@@ -46,9 +46,8 @@ class project_table(db.Model):
         return proid_obj
 
     def query_pro(self,pro_uid,pro_id):
-        pro_obj = self.query.filter(or_(self.project_id==pro_id,self.project_user_id==pro_uid)).one_or_none()
+        pro_obj = self.query.filter(or_(self.project_id==pro_id, self.project_user_id==pro_uid)).one_or_none()
         return pro_obj
-
 
 
 class layer_table(db.Model):
@@ -92,9 +91,11 @@ class module_custom_table(db.Model):
     # 模块的使用说明
     module_custom_desc = db.Column(db.Text, nullable=False)
     # 自定义模块的结构: 一个序列化的module_def_id
-    module_custom_struture = db.Column(db.PickleType, nullable=False)
+    module_custom_structure = db.Column(db.PickleType, nullable=False)
     # 自定义模块的参数总数
     module_custom_param_num = db.Column(db.Integer, nullable=False)
+    # 自定义模板的代码模块
+    module_custom_precode = db.Column(db.Text, nullable=False)
     # 是否是用户不可见
     module_custom_invisible = db.Column(db.Boolean, nullable=False, default=False)
 
