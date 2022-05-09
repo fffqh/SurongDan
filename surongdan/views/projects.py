@@ -4,11 +4,18 @@ import re
 from flask import current_app
 from flask import request, jsonify, Blueprint, g, session
 
+from surongdan.precode import *
 from surongdan.extensions import db
 from surongdan.models import project_table, layer_table, module_def_table, module_custom_table, dataset_table
 
 projects_bp = Blueprint('projects', __name__)
 
+# 测试 gen_precode
+@projects_bp.route('/test_genprecode', methods={'POST'})
+def test_genprecode():
+    data = request.get_json()
+    precode = gen_precode(data['module_custom_structure'])
+    return jsonify({'precode':precode}), 200
 
 # 保存工程接口：projects/save_projinfo
 @projects_bp.route('/save_projinfo', methods={'POST'})
@@ -42,8 +49,8 @@ def save_projinfo():
         return jsonify({'project_id': p.project_id, 'msg': 'update success'}), 201
 
 
-# 保存工程接口：projects/save_struture
-@projects_bp.route('/save_struture', methods={'POST'})
+# 保存工程接口：projects/save_structure
+@projects_bp.route('/save_structure', methods={'POST'})
 def save_structure():
     data = request.get_json()
     print(data)
@@ -276,7 +283,7 @@ def add_cus_md():
                             )
     # 判断结构是否正确
     para_sum = 0
-    for m in data['module_custom_struture']:
+    for m in data['module_custom_structure']:
         if m['module_is_custom']:
             mp = module_custom_table.query.get(int(m['module_id']))
         else:
@@ -299,7 +306,7 @@ def add_cus_md():
     if para_sum != data['module_custom_param_num']:
         return jsonify({'fault': 'The total number of parameters does not match'}), 400
     # 将模块结构转化为pickle存储
-    p.module_custom_struture = pickle.dumps(data['module_custom_struture'])
+    p.module_custom_structure = pickle.dumps(data['module_custom_structure'])
     # 更新数据库
     with db.auto_commit_db():
         db.session.add(p)

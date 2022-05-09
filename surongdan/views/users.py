@@ -125,11 +125,11 @@ def login():
 
     # 登录成功
     # 登陆成功，在全局变量中储存用户信息
-    session['user_name'] = u.user_name
-    session['user_id'] = u.user_id
-    session['user_email'] = u.email
     session['logged_in'] = True
     session['user_id'] = u.user_id
+    session['user_name'] = u.user_name
+    session['user_email'] = u.email
+    session['user_is_admin'] = u.user_is_admin
     response = make_response(jsonify({'user_id': u.user_id, 'user_name': u.user_name}))
     response.set_cookie('name', u.user_name)
     return response, 200
@@ -145,6 +145,8 @@ def logout():
         return response, 202
     session.pop('logged_in')
     session.pop('user_id')
+    session.pop('user_is_admin')
+    session.pop('user_email')
     response = jsonify({'info': 'successful logout'})
     response.delete_cookie('name')
     return response, 200
