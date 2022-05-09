@@ -40,6 +40,8 @@ class project_table(db.Model):
     # 代码和状态
     project_code = db.Column(db.Text, nullable=True)
     project_status = db.Column(db.String(10), nullable=False)
+    # 前端样式
+    project_json = db.Column(db.Text, nullable=True)
     # 根据用户名查询pid——list
     def query_prolist(self,pro_uid):
         proid_obj = self.with_entities(self.project).filter(self.project_user_id==pro_uid).all()
@@ -98,7 +100,8 @@ class module_custom_table(db.Model):
     module_custom_precode = db.Column(db.Text, nullable=False)
     # 是否是用户不可见
     module_custom_invisible = db.Column(db.Boolean, nullable=False, default=False)
-
+    # 前端样式
+    module_custom_json = db.Column(db.Text, nullable=True)
 
 class dataset_table(db.Model):
     __tablename__ = 'dataset_table'

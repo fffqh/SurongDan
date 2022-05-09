@@ -73,11 +73,11 @@ def save_structure():
         elif int(lid) == -1:  # 将新模块插入layer_table
             # 创建一个新的layer_obj
             layer_obj = layer_table(layer_project_id=data['project_id'],
-                                    layer_x=m.get('layer_x'),
-                                    layer_y=m.get('layer_y'),
-                                    layer_is_custom=m.get('layer_is_custom'),
+                                    layer_x=float(m.get('layer_x')),
+                                    layer_y=float(m.get('layer_y')),
+                                    layer_is_custom=bool(m.get('layer_is_custom')),
                                     layer_param_list=pickle.dumps(m.get('layer_param_list')),
-                                    layer_param_num=m.get('layer_param_num'))
+                                    layer_param_num=int(m.get('layer_param_num')))
             # 检查是否存在 module_id
             layer_module_id = m.get('layer_module_id')
             if layer_module_id is None:
@@ -92,20 +92,30 @@ def save_structure():
             db.session.commit()
             # 取得新layer的id
             lid = layer_obj.layer_id
+        else: # 更新已有模块的相关字段
+            layer_obj = layer_table.query.get(int(lid))
+            layer_obj.layer_x = float(m.get('layer_x'))
+            layer_obj.layer_y = float(m.get('layer_y'))
+            layer_obj.layer_is_custom = bool(m.get('layer_is_custom'))
+            layer_obj.layer_param_list = pickle.dumps(m.get('layer_param_list'))
+            layer_obj.layer_param_num = int(m.get('layer_param_num'))
+            db.session.commit()
         # 将layer_id放入project_table.project_structure
         new_slst.append(lid)
         if old_slst.count(lid):
             old_slst.remove(lid)
     # 3. 将 new_slst 填入p
     p.project_structure = pickle.dumps(new_slst)
-    # 4. 将 old_slst 剩余的 layer 从 layer_table 中删去
+    # 4. 更新前端json字段
+    p.project_json = data['project_json']
+    # 5. 将 old_slst 剩余的 layer 从 layer_table 中删去
     for old_layer in old_slst:
         old_layer_obj = layer_table.query.get((old_layer, p.project_id))
         if old_layer_obj:
             db.session.delete(old_layer_obj)
     db.session.commit()
-    # 5. 返回响应包
-    return jsonify({'project_id': p.project_id, 'project_layer_lst': new_slst}), 201
+    # 6. 返回响应包
+    return jsonify({'project_id': p.project_id, 'project_layer_lst': new_slst, 'project_json':p.project_json}), 201
 
 
 # 复制工程接口：projects/copy_proj
