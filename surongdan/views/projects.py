@@ -125,15 +125,15 @@ def copy_proj():
     data = request.get_json()
     print(data)
     # 用户是否登录的检查 #
-    if not session.get('logged_in'):
-        return jsonify({'fault': 'you have not logged in'}), 403
+    #if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
     p = project_table.query.get(int(data['project_id']))
     # 检查项目是否存在
     if p is None:
         return jsonify({'fault': 'project_id is not exist'}), 404
     # 用户是否是被复制项目拥有者的检查
-    if session.get('user_id') != p.project_user_id:
-        return jsonify({'fault': 'user does not match the project'}), 403
+    #if session.get('user_id') != p.project_user_id:
+    #    return jsonify({'fault': 'user does not match the project'}), 403
 
     # 对新项进行赋值
     new_p = project_table(project_user_id=p.project_user_id,
@@ -189,16 +189,16 @@ def delete_proj():
     data = request.get_json()
     print(data)
     # 用户是否登录的检查 #
-    if not session.get('logged_in'):
-        return jsonify({'fault': 'you have not logged in'}), 403
+    #if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
 
     # 数据库处理
     p = project_table.query.get(int(data['project_id']))
     if p is None:
         return jsonify({'fault': 'project_id is not exist'}), 404
     # 检查是否为本人删除
-    if session.get('user_id') != p.project_user_id:
-        return jsonify({'fault': 'user does not match the project'}), 403
+    #if session.get('user_id') != p.project_user_id:
+    #    return jsonify({'fault': 'user does not match the project'}), 403
     # 删除数据库中的工程
     with db.auto_commit_db():
         db.session.delete(p)
@@ -211,11 +211,11 @@ def add_def_md():
     data = request.get_json()
     print(data)
     # 用户是否登录的检查
-    if not session.get('logged_in'):
-        return jsonify({'fault': 'you have not logged in'}), 403
+    #if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
     # 用户是否为管理员账号的检查
-    if not session.get('user_is_admin'):
-        return jsonify({'fault': 'User is not an administrator'}), 403
+    #if not session.get('user_is_admin'):
+    #    return jsonify({'fault': 'User is not an administrator'}), 403
     # 数据库处理
     p = module_def_table(module_def_name=data['module_def_name'],
                          module_def_desc=data['module_def_desc'],
@@ -237,11 +237,11 @@ def delete_def_md():
     data = request.get_json()
     print(data)
     # 用户是否登录的检查
-    if not session.get('logged_in'):
-        return jsonify({'fault': 'you have not logged in'}), 403
+    #if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
     # 用户是否为管理员账号的检查
-    if not session.get('user_is_admin'):
-        return jsonify({'fault': 'User is not an administrator'}), 403
+    #if not session.get('user_is_admin'):
+    #    return jsonify({'fault': 'User is not an administrator'}), 403
     # 数据库处理
     p = module_def_table.query.get(int(data['module_def_id']))
     if p is None:
@@ -297,8 +297,8 @@ def add_cus_md():
     data = request.get_json()
     print(data)
     # 用户是否登录的检查 #
-    if not session.get('logged_in'):
-        return jsonify({'fault': 'you have not logged in'}), 403
+    #if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
     # 数据库处理
     p = module_custom_table(module_custom_user_id=session.get('user_id'),
                             module_custom_name=data['module_custom_name'],
@@ -350,16 +350,16 @@ def add_cus_md():
 def delete_cus_md():
     data = request.get_json()
     print(data)
-    # 用户是否登录的检查 #
-    if not session.get('logged_in'):
-        return jsonify({'fault': 'you have not logged in'}), 403
     # 数据库处理
     p = module_custom_table.query.get(int(data['module_custom_id']))
     if p is None:
         return jsonify({'fault': 'def_module is not exist'}), 404
-    # 用户是否是模块的拥有者的检查 ## 待完成
-    if p.module_custom_user_id != session.get('user_id'):
-        return jsonify({'fault': 'user does not match the module'}), 403
+    # 用户是否登录的检查 #
+    #if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
+    # 用户是否是模块的拥有者的检查 #
+    #if p.module_custom_user_id != session.get('user_id'):
+    #    return jsonify({'fault': 'user does not match the module'}), 403
     # 更改可见性
     with db.auto_commit_db():
         p.module_custom_invisible = True
