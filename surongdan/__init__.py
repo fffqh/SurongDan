@@ -51,22 +51,22 @@ def register_commands(app):
         db.session.add(u)
         db.session.commit()
         ## 添加默认模块 conv2d，pooling2d，linear，relu
-        m1 = module_def_table(  module_def_name='conv2d',
+        m1 = module_def_table(  module_def_name='conv_layer',
                                 module_def_desc='conv2d卷积层',
                                 module_def_param_num=11, 
                                 module_def_precode='nn.Conv2d($0, $1, $2, stride=$3, padding=$4, dilation=$5, groups=$6, bias=$7, padding_mode=$8, device=$9, dtype=$10)'
                                 )
-        m2 = module_def_table(  module_def_name='pooling2d',
+        m2 = module_def_table(  module_def_name='pooling_layer',
                                 module_def_desc='pooling2d池化层',
                                 module_def_param_num=6, 
                                 module_def_precode='torch.nn.AvgPool2d($0, stride=$1, padding=$2, ceil_mode=$3, count_include_pad=$4, divisor_override=$5)'
                                 )
-        m3 = module_def_table(  module_def_name='linear',
+        m3 = module_def_table(  module_def_name='fc_layer',
                                 module_def_desc='linear卷积层',
                                 module_def_param_num=5, 
                                 module_def_precode='nn.Linear($0, $1, bias=$2, device=$3, dtype=$4)'
                                 )
-        m4 = module_def_table(  module_def_name='relu',
+        m4 = module_def_table(  module_def_name='activate_function',
                                 module_def_desc='relu激活函数',
                                 module_def_param_num=1, 
                                 module_def_precode='nn.ReLU(inplace=$0)'

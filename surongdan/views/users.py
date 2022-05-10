@@ -103,8 +103,8 @@ def login():
     # 查询用户当前是否重复登录
     name = request.cookies.get('name')
     print(name)
-    if name and session.get('logged_in'):
-        return jsonify({'fault': 'You have already logged in'}), 204
+    # if name and session.get('logged_in'):
+    #     return jsonify({'fault': 'You have already logged in'}), 204
     email_str = r'^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}$'
     data = request.get_json()
     print(data)
