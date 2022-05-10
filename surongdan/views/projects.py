@@ -1,8 +1,8 @@
 import datetime
 import pickle
-
+from sqlalchemy import and_
 from flask import current_app
-from flask import request, jsonify, Blueprint, g, session
+from flask import request, jsonify, Blueprint, session
 
 from surongdan.models import project_table, layer_table
 from surongdan.precode import *
@@ -261,9 +261,10 @@ def getlist():
     # 在登录成功之后记录用户信息到session
     # 查询project_table到所有user_id相同者创建的项目
     current_uid = session.get("user_id")
-    proj_list = project_table.query_prolist(current_uid)
+    # print(current_uid)
+    proj_list = project_table.query.with_entities(project_table.project_id).filter(project_table.project_user_id==current_uid).all()
     if proj_list != None:
-        return jsonify({'project_list': proj_list}), 201
+        return jsonify({'proj_list': proj_list}), 200
     else:
         return jsonify({'fault': 'Projects are not exist'}), 403
 
@@ -275,9 +276,10 @@ def getproj():
     # 查询project_table到所有user_id相同者创建的项目
     data = request.get_json()
     print(data)  # using for debug
-    current_proid = int(data['project_id'])
+    current_proid = int(data['proj_id'])
     current_uid = session.get('user_id')
-    proj_pro = project_table.query_pro(current_uid, current_proid)
+    # proj_pro = project_table.query_pro(current_uid, current_proid)
+    proj_pro = project_table.query.filter(and_(project_table.project_id==current_proid, project_table.project_user_id==current_uid)).one_or_none()
     if proj_pro != None:
         return jsonify({'project_id': proj_pro.project_id,
                         'project_user_id': proj_pro.project_user_id,
@@ -289,7 +291,8 @@ def getproj():
                         'project_outpath': proj_pro.project_outpath,
                         'project_code': proj_pro.project_code,
                         'project_status': proj_pro.project_status,
-                        'project_image': proj_pro.project_image}), 200
+                        'project_image': proj_pro.project_image,
+                        'project_image':proj_pro.project_image}), 200
     else:
         return jsonify({'fault': 'Projects are not accessible'}), 403
 

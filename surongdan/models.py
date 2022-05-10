@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import or_
+
 from surongdan.extensions import db
 
 
@@ -45,13 +45,14 @@ class project_table(db.Model):
     # 缩略图
     project_image = db.Column(db.Text, nullable=True)
     # 根据用户名查询pid——list
-    def query_prolist(self,pro_uid):
-        proid_obj = self.with_entities(self.project).filter(self.project_user_id==pro_uid).all()
-        return proid_obj
+    
+    # def query_prolist(self, pro_uid):
+    #     proid_obj = self.query.with_entities(self.project_id).filter(self.project_user_id==pro_uid).all()
+    #     return proid_obj
 
-    def query_pro(self,pro_uid,pro_id):
-        pro_obj = self.query.filter(or_(self.project_id==pro_id, self.project_user_id==pro_uid)).one_or_none()
-        return pro_obj
+    # def query_pro(self,pro_uid,pro_id):
+    #     pro_obj = self.query.filter(or_(self.project_id==pro_id, self.project_user_id==pro_uid)).one_or_none()
+    #     return pro_obj
 
 
 class layer_table(db.Model):
