@@ -109,7 +109,9 @@ def save_structure():
     p.project_structure = pickle.dumps(new_slst)
     # 4. 更新前端json字段
     p.project_json = data['project_json']
-    # 5. 将 old_slst 剩余的 layer 从 layer_table 中删去
+    # 5. 更新工程缩略图
+    p.project_image = data['project_image']
+    # 6. 将 old_slst 剩余的 layer 从 layer_table 中删去
     for old_layer in old_slst:
         old_layer_obj = layer_table.query.get((old_layer, p.project_id))
         if old_layer_obj:
@@ -125,14 +127,14 @@ def copy_proj():
     data = request.get_json()
     print(data)
     # 用户是否登录的检查 #
-    #if not session.get('logged_in'):
+    # if not session.get('logged_in'):
     #    return jsonify({'fault': 'you have not logged in'}), 403
     p = project_table.query.get(int(data['project_id']))
     # 检查项目是否存在
     if p is None:
         return jsonify({'fault': 'project_id is not exist'}), 404
     # 用户是否是被复制项目拥有者的检查
-    #if session.get('user_id') != p.project_user_id:
+    # if session.get('user_id') != p.project_user_id:
     #    return jsonify({'fault': 'user does not match the project'}), 403
 
     # 对新项进行赋值
@@ -189,7 +191,7 @@ def delete_proj():
     data = request.get_json()
     print(data)
     # 用户是否登录的检查 #
-    #if not session.get('logged_in'):
+    # if not session.get('logged_in'):
     #    return jsonify({'fault': 'you have not logged in'}), 403
 
     # 数据库处理
@@ -197,7 +199,7 @@ def delete_proj():
     if p is None:
         return jsonify({'fault': 'project_id is not exist'}), 404
     # 检查是否为本人删除
-    #if session.get('user_id') != p.project_user_id:
+    # if session.get('user_id') != p.project_user_id:
     #    return jsonify({'fault': 'user does not match the project'}), 403
     # 删除数据库中的工程
     with db.auto_commit_db():
@@ -211,10 +213,10 @@ def add_def_md():
     data = request.get_json()
     print(data)
     # 用户是否登录的检查
-    #if not session.get('logged_in'):
+    # if not session.get('logged_in'):
     #    return jsonify({'fault': 'you have not logged in'}), 403
     # 用户是否为管理员账号的检查
-    #if not session.get('user_is_admin'):
+    # if not session.get('user_is_admin'):
     #    return jsonify({'fault': 'User is not an administrator'}), 403
     # 数据库处理
     p = module_def_table(module_def_name=data['module_def_name'],
@@ -237,10 +239,10 @@ def delete_def_md():
     data = request.get_json()
     print(data)
     # 用户是否登录的检查
-    #if not session.get('logged_in'):
+    # if not session.get('logged_in'):
     #    return jsonify({'fault': 'you have not logged in'}), 403
     # 用户是否为管理员账号的检查
-    #if not session.get('user_is_admin'):
+    # if not session.get('user_is_admin'):
     #    return jsonify({'fault': 'User is not an administrator'}), 403
     # 数据库处理
     p = module_def_table.query.get(int(data['module_def_id']))
@@ -274,7 +276,7 @@ def getproj():
     data = request.get_json()
     print(data)  # using for debug
     current_proid = int(data['project_id'])
-    current_uid = g.user.user_id
+    current_uid = session.get('user_id')
     proj_pro = project_table.query_pro(current_uid, current_proid)
     if proj_pro != None:
         return jsonify({'project_id': proj_pro.project_id,
@@ -286,7 +288,8 @@ def getproj():
                         'project_dataset_id': proj_pro.project_dataset_id,
                         'project_outpath': proj_pro.project_outpath,
                         'project_code': proj_pro.project_code,
-                        'project_status': proj_pro.project_status}), 200
+                        'project_status': proj_pro.project_status,
+                        'project_image': proj_pro.project_image}), 200
     else:
         return jsonify({'fault': 'Projects are not accessible'}), 403
 
@@ -297,7 +300,7 @@ def add_cus_md():
     data = request.get_json()
     print(data)
     # 用户是否登录的检查 #
-    #if not session.get('logged_in'):
+    # if not session.get('logged_in'):
     #    return jsonify({'fault': 'you have not logged in'}), 403
     # 数据库处理
     p = module_custom_table(module_custom_user_id=session.get('user_id'),
@@ -344,6 +347,33 @@ def add_cus_md():
         return jsonify({'module_custom_id': p.module_custom_id, 'msg': 'create success'}), 201
 
 
+# 更改自定义模块信息：/projects/edit_cus_md
+@projects_bp.route('/edit_cus_md', methods={'POST'})
+def edit_cus_md():
+    data = request.get_json()
+    print(data)
+    # 用户是否登录的检查 #
+    # if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
+
+    # 数据库处理
+    p = module_custom_table.query.get(int(data['module_custom_id']))
+    # 检查自定义模块是否存在并可见
+    if p is None or p.module_custom_invisible:
+        return jsonify({'fault': 'module_custom_id is invisible or not exist'}), 404
+    # 用户是否是模块的拥有者的检查 #
+    # if p.module_custom_user_id != session.get('user_id'):
+    #    return jsonify({'fault': 'user does not match the module'}), 403
+    # 更新数据库
+    with db.auto_commit_db():
+        p.module_custom_name = data['module_custom_name']
+        p.module_custom_desc = data['module_custom_desc']
+    if p.module_custom_id is None:
+        return jsonify({'fault': 'something wrong'}), 500
+    else:
+        return jsonify({'module_custom_id': p.module_custom_id, 'msg': 'create success'}), 201
+
+
 # 删除自定义模块：projects/delete_cus_md
 # 并非实际删除，而是将其设定为用户不可见
 @projects_bp.route('/delete_cus_md', methods={'POST'})
@@ -355,10 +385,10 @@ def delete_cus_md():
     if p is None:
         return jsonify({'fault': 'def_module is not exist'}), 404
     # 用户是否登录的检查 #
-    #if not session.get('logged_in'):
+    # if not session.get('logged_in'):
     #    return jsonify({'fault': 'you have not logged in'}), 403
     # 用户是否是模块的拥有者的检查 #
-    #if p.module_custom_user_id != session.get('user_id'):
+    # if p.module_custom_user_id != session.get('user_id'):
     #    return jsonify({'fault': 'user does not match the module'}), 403
     # 更改可见性
     with db.auto_commit_db():
