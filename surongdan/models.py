@@ -42,6 +42,8 @@ class project_table(db.Model):
     project_status = db.Column(db.String(10), nullable=False)
     # 前端样式
     project_json = db.Column(db.Text, nullable=True)
+    # 缩略图
+    project_image = db.Column(db.Text, nullable=True)
     # 根据用户名查询pid——list
     def query_prolist(self,pro_uid):
         proid_obj = self.with_entities(self.project).filter(self.project_user_id==pro_uid).all()

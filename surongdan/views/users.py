@@ -128,7 +128,7 @@ def login():
     session['logged_in'] = True
     session['user_id'] = u.user_id
     session['user_name'] = u.user_name
-    session['user_email'] = u.email
+    session['user_email'] = u.user_email
     session['user_is_admin'] = u.user_is_admin
     response = make_response(jsonify({'user_id': u.user_id, 'user_name': u.user_name}))
     response.set_cookie('name', u.user_name)

@@ -1,21 +1,22 @@
 import datetime
 import pickle
-import re
+
 from flask import current_app
 from flask import request, jsonify, Blueprint, g, session
 
+from surongdan.models import project_table, layer_table
 from surongdan.precode import *
-from surongdan.extensions import db
-from surongdan.models import project_table, layer_table, module_def_table, module_custom_table, dataset_table
 
 projects_bp = Blueprint('projects', __name__)
+
 
 # 测试 gen_precode
 @projects_bp.route('/test_genprecode', methods={'POST'})
 def test_genprecode():
     data = request.get_json()
     precode = gen_precode(data['module_custom_structure'])
-    return jsonify({'precode':precode}), 200
+    return jsonify({'precode': precode}), 200
+
 
 # 保存工程接口：projects/save_projinfo
 @projects_bp.route('/save_projinfo', methods={'POST'})
@@ -92,7 +93,7 @@ def save_structure():
             db.session.commit()
             # 取得新layer的id
             lid = layer_obj.layer_id
-        else: # 更新已有模块的相关字段
+        else:  # 更新已有模块的相关字段
             layer_obj = layer_table.query.get(int(lid))
             layer_obj.layer_x = float(m.get('layer_x'))
             layer_obj.layer_y = float(m.get('layer_y'))
@@ -108,14 +109,16 @@ def save_structure():
     p.project_structure = pickle.dumps(new_slst)
     # 4. 更新前端json字段
     p.project_json = data['project_json']
-    # 5. 将 old_slst 剩余的 layer 从 layer_table 中删去
+    # 5. 更新工程缩略图
+    p.project_image = data['project_image']
+    # 6. 将 old_slst 剩余的 layer 从 layer_table 中删去
     for old_layer in old_slst:
         old_layer_obj = layer_table.query.get((old_layer, p.project_id))
         if old_layer_obj:
             db.session.delete(old_layer_obj)
     db.session.commit()
     # 6. 返回响应包
-    return jsonify({'project_id': p.project_id, 'project_layer_lst': new_slst, 'project_json':p.project_json}), 201
+    return jsonify({'project_id': p.project_id, 'project_layer_lst': new_slst, 'project_json': p.project_json}), 201
 
 
 # 复制工程接口：projects/copy_proj
@@ -123,14 +126,16 @@ def save_structure():
 def copy_proj():
     data = request.get_json()
     print(data)
-    # 用户是否登录的检查 ## 待完成
+    # 用户是否登录的检查 #
+    # if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
     p = project_table.query.get(int(data['project_id']))
     # 检查项目是否存在
     if p is None:
         return jsonify({'fault': 'project_id is not exist'}), 404
-    # 用户是否是被复制项目拥有者的检查 ##待检查
-    # if session['user_id'] != p.project_user_id:
-    #   return jsonify({'fault':'user doesn't match the project'}),403
+    # 用户是否是被复制项目拥有者的检查
+    # if session.get('user_id') != p.project_user_id:
+    #    return jsonify({'fault': 'user does not match the project'}), 403
 
     # 对新项进行赋值
     new_p = project_table(project_user_id=p.project_user_id,
@@ -140,23 +145,24 @@ def copy_proj():
                           project_dataset_id=p.project_dataset_id,
                           project_outpath=p.project_outpath,
                           project_code=p.project_code,
-                          project_status=p.project_status)
+                          project_status=p.project_status,
+                          project_json=p.project_json)
 
-    project_structure = pickle.loads(p.project_structure)
     # 依次新建所有的layer
     layer_obj = []  # 存储layer的列表，之后一次性提交所有的数据库更改，便于回滚
-    for i in range(len(project_structure)):
-        old_layer = layer_table.query.get(int(project_structure[i]))
-        new_layer = layer_table(layer_x=old_layer.layer_x,
-                                layer_y=old_layer.layer_y,
-                                layer_is_custom=old_layer.layer_is_custom,
-                                layer_cm_id=old_layer.layer_cm_id,
-                                layer_dm_id=old_layer.layer_dm_id,
-                                layer_param_list=old_layer.layer_param_list,
-                                layer_param_num=old_layer.layer_param_num,
-
-                                )
-        layer_obj.append(new_layer)
+    if p.project_structure is not None:
+        project_structure = pickle.loads(p.project_structure)
+        for i in range(len(project_structure)):
+            old_layer = layer_table.query.get(int(project_structure[i]))
+            new_layer = layer_table(layer_x=old_layer.layer_x,
+                                    layer_y=old_layer.layer_y,
+                                    layer_is_custom=old_layer.layer_is_custom,
+                                    layer_cm_id=old_layer.layer_cm_id,
+                                    layer_dm_id=old_layer.layer_dm_id,
+                                    layer_param_list=old_layer.layer_param_list,
+                                    layer_param_num=old_layer.layer_param_num,
+                                    )
+            layer_obj.append(new_layer)
     # 提交数据库，project的提交与layer一起进行，方便进行回滚,避免出现失效的project数据
     with db.auto_commit_db():
         db.session.add(new_p)
@@ -172,8 +178,10 @@ def copy_proj():
         if m.layer_id is None:
             return jsonify({'fault': 'new layer failed'}), 500
         lay_list.append(m.layer_id)
-    with db.auto_commit_db():
-        new_p.project_structure = pickle.dumps(lay_list)
+    # 内部存在结构，则保存
+    if len(lay_list) != 0:
+        with db.auto_commit_db():
+            new_p.project_structure = pickle.dumps(lay_list)
     return ({'project_id': new_p.project_id, 'msg': 'copy success'}), 201
 
 
@@ -182,15 +190,17 @@ def copy_proj():
 def delete_proj():
     data = request.get_json()
     print(data)
-    # 用户是否登录的检查 ## 待完成
+    # 用户是否登录的检查 #
+    # if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
 
     # 数据库处理
     p = project_table.query.get(int(data['project_id']))
     if p is None:
         return jsonify({'fault': 'project_id is not exist'}), 404
-    # 检查是否为本人删除 ##待完成
-    # if session['user_id'] != p.project_user_id:
-    #   return jsonify({'fault':'user doesn't match the project'}),403
+    # 检查是否为本人删除
+    # if session.get('user_id') != p.project_user_id:
+    #    return jsonify({'fault': 'user does not match the project'}), 403
     # 删除数据库中的工程
     with db.auto_commit_db():
         db.session.delete(p)
@@ -202,9 +212,11 @@ def delete_proj():
 def add_def_md():
     data = request.get_json()
     print(data)
-    # 用户是否登录的检查以及用户是否为管理员账号的检查 ## 待完成
-    # u = user_table.query.get(int(session['user_id']))
-    # if not u.user_is_admin:
+    # 用户是否登录的检查
+    # if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
+    # 用户是否为管理员账号的检查
+    # if not session.get('user_is_admin'):
     #    return jsonify({'fault': 'User is not an administrator'}), 403
     # 数据库处理
     p = module_def_table(module_def_name=data['module_def_name'],
@@ -226,9 +238,11 @@ def add_def_md():
 def delete_def_md():
     data = request.get_json()
     print(data)
-    # 用户是否登录的检查以及用户是否为管理员账号的检查 ## 待完成
-    # u = user_table.query.get(int(session['user_id']))
-    # if not u.user_is_admin:
+    # 用户是否登录的检查
+    # if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
+    # 用户是否为管理员账号的检查
+    # if not session.get('user_is_admin'):
     #    return jsonify({'fault': 'User is not an administrator'}), 403
     # 数据库处理
     p = module_def_table.query.get(int(data['module_def_id']))
@@ -253,6 +267,7 @@ def getlist():
     else:
         return jsonify({'fault': 'Projects are not exist'}), 403
 
+
 # 获得工程
 @projects_bp.route('/getproj', methods={'GET', 'POST'})
 def getproj():
@@ -261,7 +276,7 @@ def getproj():
     data = request.get_json()
     print(data)  # using for debug
     current_proid = int(data['project_id'])
-    current_uid = g.user.user_id
+    current_uid = session.get('user_id')
     proj_pro = project_table.query_pro(current_uid, current_proid)
     if proj_pro != None:
         return jsonify({'project_id': proj_pro.project_id,
@@ -273,7 +288,8 @@ def getproj():
                         'project_dataset_id': proj_pro.project_dataset_id,
                         'project_outpath': proj_pro.project_outpath,
                         'project_code': proj_pro.project_code,
-                        'project_status': proj_pro.project_status}), 200
+                        'project_status': proj_pro.project_status,
+                        'project_image': proj_pro.project_image}), 200
     else:
         return jsonify({'fault': 'Projects are not accessible'}), 403
 
@@ -283,13 +299,15 @@ def getproj():
 def add_cus_md():
     data = request.get_json()
     print(data)
-    # 用户是否登录的检查 ## 待完成
+    # 用户是否登录的检查 #
+    # if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
     # 数据库处理
-    p = module_custom_table(module_custom_user_id=data['module_custom_user_id'],
-                            # module_custom_user_id=session['user_id'],
+    p = module_custom_table(module_custom_user_id=session.get('user_id'),
                             module_custom_name=data['module_custom_name'],
                             module_custom_desc=data['module_custom_desc'],
-                            module_custom_param_num=data['module_custom_param_num']
+                            module_custom_param_num=data['module_custom_param_num'],
+                            module_custom_json=data['module_custom_json']
                             )
     # 判断结构是否正确
     para_sum = 0
@@ -317,9 +335,39 @@ def add_cus_md():
         return jsonify({'fault': 'The total number of parameters does not match'}), 400
     # 将模块结构转化为pickle存储
     p.module_custom_structure = pickle.dumps(data['module_custom_structure'])
+
+    # 存储自定义模块的对应代码
+    p.module_custom_precode = gen_precode(data['module_custom_structure'])
     # 更新数据库
     with db.auto_commit_db():
         db.session.add(p)
+    if p.module_custom_id is None:
+        return jsonify({'fault': 'something wrong'}), 500
+    else:
+        return jsonify({'module_custom_id': p.module_custom_id, 'msg': 'create success'}), 201
+
+
+# 更改自定义模块信息：/projects/edit_cus_md
+@projects_bp.route('/edit_cus_md', methods={'POST'})
+def edit_cus_md():
+    data = request.get_json()
+    print(data)
+    # 用户是否登录的检查 #
+    # if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
+
+    # 数据库处理
+    p = module_custom_table.query.get(int(data['module_custom_id']))
+    # 检查自定义模块是否存在并可见
+    if p is None or p.module_custom_invisible:
+        return jsonify({'fault': 'module_custom_id is invisible or not exist'}), 404
+    # 用户是否是模块的拥有者的检查 #
+    # if p.module_custom_user_id != session.get('user_id'):
+    #    return jsonify({'fault': 'user does not match the module'}), 403
+    # 更新数据库
+    with db.auto_commit_db():
+        p.module_custom_name = data['module_custom_name']
+        p.module_custom_desc = data['module_custom_desc']
     if p.module_custom_id is None:
         return jsonify({'fault': 'something wrong'}), 500
     else:
@@ -336,16 +384,19 @@ def delete_cus_md():
     p = module_custom_table.query.get(int(data['module_custom_id']))
     if p is None:
         return jsonify({'fault': 'def_module is not exist'}), 404
-    # 用户是否是模块的拥有者的检查 ## 待完成
-    # if p.module_custom_user_id != session['user_id']:
-    #    return jsonify({'fault': 'user doesn't match the module'}), 403
+    # 用户是否登录的检查 #
+    # if not session.get('logged_in'):
+    #    return jsonify({'fault': 'you have not logged in'}), 403
+    # 用户是否是模块的拥有者的检查 #
+    # if p.module_custom_user_id != session.get('user_id'):
+    #    return jsonify({'fault': 'user does not match the module'}), 403
     # 更改可见性
     with db.auto_commit_db():
         p.module_custom_invisible = True
     return jsonify({'msg': 'delete success'}), 200
 
 
-# 添加默认模块：projects/get-def-cos-module
+# 获取默认模块：projects/get-def-cos-module
 # 加载时，作为侧边栏的基础元素出现
 @projects_bp.route('/get_def_module', methods={'GET'})
 def get_def_md():
@@ -404,7 +455,7 @@ def generate_code():
             # 默认模块处理
             layer_mod_id = int(layer_now.layer_dm_id)
             layer_mod = module_def_table.query.get(layer_mod_id)
-            if len(layer_now.param_list)!=len(layer_mod.module_def_param_num):
+            if len(layer_now.param_list) != len(layer_mod.module_def_param_num):
                 return jsonify({'fault': 'Layer_para is inconsistent with the module_para'}), 402
             layer_n_code = ''
             layer_n_code = str(layer_mod.module_def_code)
