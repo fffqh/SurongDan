@@ -59,7 +59,6 @@ def save_structure():
     data = request.get_json()
     print(data)
     p = project_table.query.get(int(data['project_id']))
-
     # 检查项目是否存在
     if p is None:
         return jsonify({'fault': 'project_id is not exist'}), 404
@@ -113,10 +112,10 @@ def save_structure():
     # 4. 更新前端json字段
     p.project_json = data['project_json']
     # 5. 更新工程缩略图
-    p.project_image = data['project_image']
+    # p.project_image = data['project_image']
     # 6. 将 old_slst 剩余的 layer 从 layer_table 中删去
     for old_layer in old_slst:
-        old_layer_obj = layer_table.query.get((old_layer, p.project_id))
+        old_layer_obj = layer_table.query.get(old_layer)
         if old_layer_obj:
             db.session.delete(old_layer_obj)
     db.session.commit()

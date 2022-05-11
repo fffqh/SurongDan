@@ -150,3 +150,11 @@ def logout():
     response = jsonify({'info': 'successful logout'})
     response.delete_cookie('name')
     return response, 200
+
+
+@users_bp.route('/isLogin', methods={'GET'})
+def isLogin():
+    if(session.get('user_id') is None):
+        return jsonify({'msg':'Have not login in'}), 403
+    return jsonify({'msg':'ok'}), 200
+

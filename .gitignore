@@ -6,3 +6,6 @@ __pytarch__
 # 忽略文件
 .env
 note.md
+nohup.out
+templates
+static

@@ -6,6 +6,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
 
+from surongdan.views.vue import vue_bp
 from surongdan.views.users import users_bp
 from surongdan.views.projects import projects_bp
 from surongdan.extensions import db, mail_obj
@@ -35,8 +36,9 @@ def register_extensions(app):
 
 # 蓝图注册
 def register_blueprints(app):
-    app.register_blueprint(users_bp, url_prefix='/users')
-    app.register_blueprint(projects_bp, url_prefix='/projects')
+    app.register_blueprint(users_bp, url_prefix='/api/users')
+    app.register_blueprint(projects_bp, url_prefix='/api/projects')
+    app.register_blueprint(vue_bp, url_prefix='')
 
 # 命令注册
 def register_commands(app):
