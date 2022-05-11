@@ -30,9 +30,15 @@ class ProductionConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+class TestingConfig(BaseConfig):
+    # 数据库配置
+    SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
 
 config = {
     'development':DevelopmentCOnfig,
-    'production': ProductionConfig
+    'production': ProductionConfig,
+    'testing' : TestingConfig
 }
 

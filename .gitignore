@@ -4,4 +4,10 @@ data/
 pytorch_code/
 # 忽略文件
 .env
+.venv
+.idea
 note.md
+__pycache__
+
+surongdan/__pycache__
+surongdan/views/__pycache__

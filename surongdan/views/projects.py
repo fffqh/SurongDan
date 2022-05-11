@@ -292,7 +292,7 @@ def getproj():
                         'project_code': proj_pro.project_code,
                         'project_status': proj_pro.project_status,
                         'project_image': proj_pro.project_image,
-                        'project_image':proj_pro.project_image}), 200
+                        'project_json':proj_pro.project_json}), 200
     else:
         return jsonify({'fault': 'Projects are not accessible'}), 403
 

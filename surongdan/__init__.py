@@ -18,8 +18,11 @@ basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 def create_app(config_name=None):
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'development')
-
-    app = Flask('bluelog')  # 实例化app
+    
+    app = Flask('bluelog')  # 实例化app    
+    if config_name == 'testing':
+        app.config[ 'SERVER_NAME' ] = "localhost.localdomain:5000"
+   
     app.config.from_object(config[config_name])  # 配置app
 
     # 注册
