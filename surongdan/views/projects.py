@@ -25,9 +25,12 @@ def save_projinfo():
     data = request.get_json()
     print(data)
     # 用户是否登录的检查 ## 待完成
+    user_id = session.get('user_id')
+    if user_id is None:
+        return jsonify({'msg':'please login!'}), 403
     # 数据库处理
     if data['project_is_new']:  # 增加 project_table 中的表项
-        p = project_table(project_user_id=data['project_user_id'],
+        p = project_table(project_user_id=int(user_id),
                           project_name=data['project_name'],
                           project_info=data['project_info'],
                           project_dtime=datetime.datetime.now(),
@@ -56,7 +59,6 @@ def save_structure():
     data = request.get_json()
     print(data)
     p = project_table.query.get(int(data['project_id']))
-
     # 检查项目是否存在
     if p is None:
         return jsonify({'fault': 'project_id is not exist'}), 404
@@ -110,10 +112,10 @@ def save_structure():
     # 4. 更新前端json字段
     p.project_json = data['project_json']
     # 5. 更新工程缩略图
-    p.project_image = data['project_image']
+    # p.project_image = data['project_image']
     # 6. 将 old_slst 剩余的 layer 从 layer_table 中删去
     for old_layer in old_slst:
-        old_layer_obj = layer_table.query.get((old_layer, p.project_id))
+        old_layer_obj = layer_table.query.get(old_layer)
         if old_layer_obj:
             db.session.delete(old_layer_obj)
     db.session.commit()
@@ -263,36 +265,47 @@ def getlist():
     current_uid = session.get("user_id")
     # print(current_uid)
     proj_list = project_table.query.with_entities(project_table.project_id).filter(project_table.project_user_id==current_uid).all()
+    plst = []
+    for p in proj_list:
+        plst.append(p.project_id)
     if proj_list != None:
-        return jsonify({'proj_list': proj_list}), 200
+        return jsonify({'proj_list': plst}), 200
     else:
         return jsonify({'fault': 'Projects are not exist'}), 403
 
 
 # 获得工程
-@projects_bp.route('/getproj', methods={'GET', 'POST'})
+@projects_bp.route('/getproj', methods={'POST'})
 def getproj():
     # 在登录成功之后记录用户信息到session
     # 查询project_table到所有user_id相同者创建的项目
+    print("---")
     data = request.get_json()
     print(data)  # using for debug
     current_proid = int(data['proj_id'])
     current_uid = session.get('user_id')
     # proj_pro = project_table.query_pro(current_uid, current_proid)
     proj_pro = project_table.query.filter(and_(project_table.project_id==current_proid, project_table.project_user_id==current_uid)).one_or_none()
+
     if proj_pro != None:
+        lid_lst = []
+        if proj_pro.project_structure:
+            layer_lst = pickle.loads(proj_pro.project_structure)
+            for lid in layer_lst:
+                lid_lst.append(lid)
+
         return jsonify({'project_id': proj_pro.project_id,
                         'project_user_id': proj_pro.project_user_id,
                         'project_name': proj_pro.project_name,
                         'project_info': proj_pro.project_info,
                         'project_dtime': proj_pro.project_dtime,
-                        'project_structure': proj_pro.project_structure,
+                        'project_structure': lid_lst,
                         'project_dataset_id': proj_pro.project_dataset_id,
                         'project_outpath': proj_pro.project_outpath,
                         'project_code': proj_pro.project_code,
                         'project_status': proj_pro.project_status,
                         'project_image': proj_pro.project_image,
-                        'project_image':proj_pro.project_image}), 200
+                        'project_json':proj_pro.project_json}), 200
     else:
         return jsonify({'fault': 'Projects are not accessible'}), 403
 
@@ -315,6 +328,7 @@ def add_cus_md():
     # 判断结构是否正确
     para_sum = 0
     for m in data['module_custom_structure']:
+        print(m)
         if m['module_is_custom']:
             mp = module_custom_table.query.get(int(m['module_id']))
         else:
@@ -328,10 +342,10 @@ def add_cus_md():
         elif not m['module_is_custom'] and mp.module_def_invisible:
             return jsonify({'fault': 'the module is invisible'}), 400
         # 模块参数个数与请求的参数个数不符
-        if m['module_is_custom'] and mp.module_custom_param_num != len(m['module_param_list']):
-            return jsonify({'fault': 'Parameter number does not match'}), 400
-        elif not m['module_is_custom'] and mp.module_def_param_num != len(m['module_param_list']):
-            return jsonify({'fault': 'Parameter number does not match'}), 400
+        ## if m['module_is_custom'] and mp.module_custom_param_num != len(m['module_param_list']):
+        #     return jsonify({'fault': 'Parameter number does not match'}), 400
+        # elif not m['module_is_custom'] and mp.module_def_param_num != len(m['module_param_list']):
+        #     return jsonify({'fault': 'Parameter number does not match'}), 400
         para_sum += len(m['module_param_list'])
     # 总参数个数是否符合
     if para_sum != data['module_custom_param_num']:
@@ -404,7 +418,7 @@ def delete_cus_md():
 @projects_bp.route('/get_def_module', methods={'GET'})
 def get_def_md():
     datas = module_def_table.query.filter_by(module_def_invisible=False)
-    print(datas)
+    # print(datas)
     def_data = []
     for defs in datas:
         def_data.append({'module_def_id': defs.module_def_id, 'module_def_name': defs.module_def_name,
@@ -420,7 +434,9 @@ def get_cus_md():
     for coss in datas:
         cos_data.append(
             {'module_custom_id': coss.module_custom_id, 'module_custom_name': coss.module_custom_name,
-             'module_custom_desc': coss.module_custom_desc, 'module_custom_param_num': coss.module_custom_param_num})
+             'module_custom_desc': coss.module_custom_desc, 'module_custom_param_num': coss.module_custom_param_num, 
+             'module_custom_json': coss.module_custom_json}
+        )
     return jsonify({'cos_data': cos_data}), 201
 
 
