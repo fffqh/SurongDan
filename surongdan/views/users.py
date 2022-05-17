@@ -107,7 +107,7 @@ def login():
     #     return jsonify({'fault': 'You have already logged in'}), 204
     email_str = r'^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}$'
     data = request.get_json()
-    print(data)
+    print(data['user_info'])
     u = None
     if re.match(email_str, data['user_info']):
         u = user_table.query.filter_by(user_email=data['user_info']).first()

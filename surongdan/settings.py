@@ -30,9 +30,15 @@ class ProductionConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+class TestingConfig(BaseConfig):
+    # 数据库配置,不知为何会有getenv得到None的情况，所以用OR写在后面
+    SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')  or 'mysql+pymysql://root:root123@127.0.0.1:3306/surong'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
 
 config = {
     'development':DevelopmentCOnfig,
-    'production': ProductionConfig
+    'production': ProductionConfig,
+    'testing' : TestingConfig
 }
 

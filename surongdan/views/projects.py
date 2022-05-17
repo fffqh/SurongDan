@@ -237,29 +237,27 @@ def getproj():
     print(data)  # using for debug
     current_proid = int(data['proj_id'])
     current_uid = session.get('user_id')
-    # proj_pro = project_table.query_pro(current_uid, current_proid)
-    proj_pro = project_table.query.filter(
-        and_(project_table.project_id == current_proid, project_table.project_user_id == current_uid)).one_or_none()
-
+#     proj_pro = project_table.query_pro(current_uid, current_proid)
+    proj_pro = project_table.query.filter(and_(project_table.project_id == current_proid, project_table.project_user_id == current_uid)).one_or_none()
+#
     if proj_pro != None:
-        lid_lst = []
-        if proj_pro.project_structure:
-            layer_lst = pickle.loads(proj_pro.project_structure)
-            for lid in layer_lst:
-                lid_lst.append(lid)
+#         lid_lst = []
+#         if proj_pro.project_structure:
+#             layer_lst = pickle.loads(proj_pro.project_structure)
+#             for lid in layer_lst:
+#                 lid_lst.append(lid)
 
         return jsonify({'project_id': proj_pro.project_id,
                         'project_user_id': proj_pro.project_user_id,
                         'project_name': proj_pro.project_name,
                         'project_info': proj_pro.project_info,
                         'project_dtime': proj_pro.project_dtime,
-                        'project_structure': lid_lst,
-                        'project_dataset_id': proj_pro.project_dataset_id,
-                        'project_outpath': proj_pro.project_outpath,
-                        'project_code': proj_pro.project_code,
-                        'project_status': proj_pro.project_status,
-                        'project_image': proj_pro.project_image,
-                        'project_json': proj_pro.project_json}), 200
+#                         'project_dataset_id': proj_pro.project_dataset_id,
+#                         'project_outpath': proj_pro.project_outpath,
+#                         'project_code': proj_pro.project_code,
+#                         'project_status': proj_pro.project_status,
+                        'project_json': proj_pro.project_json,
+                        'project_image': proj_pro.project_image}), 200
     else:
         return jsonify({'fault': 'Projects are not accessible'}), 403
 
