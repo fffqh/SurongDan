@@ -9,3 +9,11 @@ note.md
 nohup.out
 templates
 static
+.env
+.venv
+.idea
+
+surongdan/__pycache__
+surongdan/views/__pycache__
+
+note.md

@@ -9,6 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from surongdan.views.vue import vue_bp
 from surongdan.views.users import users_bp
 from surongdan.views.projects import projects_bp
+from surongdan.views.run import run_bp
 from surongdan.extensions import db, mail_obj
 from surongdan.settings import config
 from surongdan.models import module_def_table, user_table
@@ -22,7 +23,8 @@ def create_app(config_name=None):
 
     app = Flask('bluelog')  # 实例化app
     app.config.from_object(config[config_name])  # 配置app
-
+    if config_name == 'testing':
+        app.config[ 'SERVER_NAME' ] = "localhost.localdomain:5000"
     # 注册
     register_extensions(app)
     register_blueprints(app)
@@ -38,6 +40,7 @@ def register_extensions(app):
 def register_blueprints(app):
     app.register_blueprint(users_bp, url_prefix='/users')
     app.register_blueprint(projects_bp, url_prefix='/projects')
+    app.register_blueprint(run_bp,url_prefix='/run')
     app.register_blueprint(vue_bp, url_prefix='')
 
 # 命令注册
@@ -85,6 +88,17 @@ def register_commands(app):
         db.drop_all()
         click.echo("Droped database.")
 
+
+#     暂时无法使用，直接运行python tests/__init__.py即可
+    @app.cli.command()
+    def test():
+        import unittest
+#         import sys
+#         sys.path.append("..")
+        tests = unittest.TestLoader().discover("./tests")
+        result = unittest.TextTestRunner(verbosity=2).run(tests)
+        if result.errors or result.failures:
+            sys.exit(1)
 
 # # app实例化
 # app = Flask('surongdan')
