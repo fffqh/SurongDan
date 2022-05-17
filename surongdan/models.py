@@ -55,6 +55,8 @@ class project_table(db.Model):
     project_json = db.Column(db.Text, nullable=True)
     # 缩略图
     project_image = db.Column(db.Text, nullable=True)
+    # 拥有的网络层结构
+    layers = db.relationship('layer_table', backref='project_table', lazy='dynamic')
 
 
 class layer_table(db.Model):
