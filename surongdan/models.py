@@ -35,6 +35,8 @@ class project_superparam_table(db.Model):
     superparam_epoch = db.Column(db.Integer)
     superparam_batchsize = db.Column(db.Integer)
     superparam_learnrate = db.Column(db.Float)
+    superparam_optim = db.Colunm(db.String(100))
+    superparam_lossfn = db.Colunm(db.String(100))
 
 class project_table(db.Model):
     __tablename__ = 'project_table'
