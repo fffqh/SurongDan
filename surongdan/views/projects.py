@@ -137,6 +137,9 @@ def save_structure():
 def copy_proj():
     data = request.get_json()
     print(data)
+    # 数据正确性检查
+    if data.get('project_id') is None:
+        return jsonify({'fault': 'Bad Data, need project_id'}), 400
     # 用户是否登录的检查 #
     # if not session.get('logged_in'):
     #    return jsonify({'fault': 'you have not logged in'}), 403
@@ -162,23 +165,21 @@ def copy_proj():
                           project_json=p.project_json,
                           project_image=p.project_image)
 
-    # 依次新建所有的layer
-    layer_obj = []  # 存储layer的列表，之后一次性提交所有的数据库更改，便于回滚
-    if p.project_layer is not None:
-        project_layer = pickle.loads(p.project_layer)
-        for i in range(len(project_layer)):
-            old_layer = layer_table.query.get([int(project_layer[i]), p.project_id])
-            new_layer = layer_table(layer_id=p.layer_id,
-                                    layer_module_id=p.layer_module_id,
-                                    layer_param_list=old_layer.layer_param_list
-                                    )
-            layer_obj.append(new_layer)
     # 提交数据库，project的提交与layer一起进行，方便进行回滚,避免出现失效的project数据
     with db.auto_commit_db():
         db.session.add(new_p)
-        for m in layer_obj:
-            m.layer_project_id = new_p.project_id
-            db.session.add(m)
+        # 依次新建所有的layer
+        # layer_obj = []  # 存储layer的列表，之后一次性提交所有的数据库更改，便于回滚
+        if p.project_layer is not None:
+            project_layer = pickle.loads(p.project_layer)
+            for i in range(len(project_layer)):
+                old_layer = layer_table.query.get([int(project_layer[i]), p.project_id])
+                new_layer = layer_table(layer_id=old_layer.layer_id,
+                                        layer_project_id=new_p.project_id,
+                                        layer_module_id=old_layer.layer_module_id,
+                                        layer_param_list=old_layer.layer_param_list
+                                        )
+                db.session.add(new_layer)
 
     # if new_p.project_id is None:
     #     return jsonify({'fault': 'new project failed'}), 500
@@ -200,6 +201,9 @@ def copy_proj():
 def delete_proj():
     data = request.get_json()
     print(data)
+    # 数据正确性检查
+    if data.get('project_id') is None:
+        return jsonify({'fault': 'Bad Data, need project_id'}), 400
     # 用户是否登录的检查 #
     # if not session.get('logged_in'):
     #    return jsonify({'fault': 'you have not logged in'}), 403
@@ -245,25 +249,26 @@ def getproj():
     print(data)  # using for debug
     current_proid = int(data['proj_id'])
     current_uid = session.get('user_id')
-#     proj_pro = project_table.query_pro(current_uid, current_proid)
-    proj_pro = project_table.query.filter(and_(project_table.project_id == current_proid, project_table.project_user_id == current_uid)).one_or_none()
-#
+    #     proj_pro = project_table.query_pro(current_uid, current_proid)
+    proj_pro = project_table.query.filter(
+        and_(project_table.project_id == current_proid, project_table.project_user_id == current_uid)).one_or_none()
+    #
     if proj_pro != None:
-#         lid_lst = []
-#         if proj_pro.project_structure:
-#             layer_lst = pickle.loads(proj_pro.project_structure)
-#             for lid in layer_lst:
-#                 lid_lst.append(lid)
+        #         lid_lst = []
+        #         if proj_pro.project_structure:
+        #             layer_lst = pickle.loads(proj_pro.project_structure)
+        #             for lid in layer_lst:
+        #                 lid_lst.append(lid)
 
         return jsonify({'project_id': proj_pro.project_id,
                         'project_user_id': proj_pro.project_user_id,
                         'project_name': proj_pro.project_name,
                         'project_info': proj_pro.project_info,
                         'project_dtime': proj_pro.project_dtime,
-#                         'project_dataset_id': proj_pro.project_dataset_id,
-#                         'project_outpath': proj_pro.project_outpath,
-#                         'project_code': proj_pro.project_code,
-#                         'project_status': proj_pro.project_status,
+                        #                         'project_dataset_id': proj_pro.project_dataset_id,
+                        #                         'project_outpath': proj_pro.project_outpath,
+                        #                         'project_code': proj_pro.project_code,
+                        #                         'project_status': proj_pro.project_status,
                         'project_json': proj_pro.project_json,
                         'project_image': proj_pro.project_image}), 200
     else:
@@ -275,6 +280,24 @@ def getproj():
 def add_def_md():
     data = request.get_json()
     print(data)
+    # 数据正确性检查
+    if data.get('module_def_name') is None:
+        return jsonify({'fault': 'Bad Data, need module_def_name'}), 400
+    if data.get('module_def_desc') is None:
+        return jsonify({'fault': 'Bad Data, need module_def_desc'}), 400
+    if data.get('module_def_param') is None:
+        return jsonify({'fault': 'Bad Data, need module_def_param'}), 400
+    if data.get('module_def_precode') is None:
+        return jsonify({'fault': 'Bad Data, need module_def_precode'}), 400
+    for param in data['module_def_param']:
+        name = param.get('name')
+        type = param.get('type')
+        isnull = param.get('isnull')
+        defv = param.get('value')
+        if (name is None) or (type is None) or (isnull is None):
+            return jsonify({'fault': 'Bad Data, module_def_param is invalid'}), 400
+        if defv is None and (not bool(isnull)):
+            return jsonify({'fault': 'Bad Data, {} need def_value'.format(str(name))}), 400
     # 用户是否登录的检查
     # if not session.get('logged_in'):
     #    return jsonify({'fault': 'you have not logged in'}), 403
@@ -302,6 +325,9 @@ def add_def_md():
 def delete_def_md():
     data = request.get_json()
     print(data)
+    # 数据正确性检查
+    if data.get('module_def_id') is None:
+        return jsonify({'fault': 'Bad Data, need module_def_id'}), 400
     # 用户是否登录的检查
     # if not session.get('logged_in'):
     #    return jsonify({'fault': 'you have not logged in'}), 403
@@ -324,6 +350,15 @@ def delete_def_md():
 def add_cus_md():
     data = request.get_json()
     print(data)
+    # 数据正确性检查
+    if data.get('module_custom_user_id') is None:
+        return jsonify({'fault': 'Bad Data, need module_custom_user_id'}), 400
+    if data.get('module_custom_name') is None:
+        return jsonify({'fault': 'Bad Data, need module_custom_name'}), 400
+    if data.get('module_custom_desc') is None:
+        return jsonify({'fault': 'Bad Data, need module_custom_desc'}), 400
+    if data.get('module_custom_json') is None:
+        return jsonify({'fault': 'Bad Data, need module_custom_json'}), 400
     # 用户是否登录的检查 #
     # if not session.get('logged_in'):
     #    return jsonify({'fault': 'you have not logged in'}), 403
@@ -348,6 +383,13 @@ def add_cus_md():
 def edit_cus_md():
     data = request.get_json()
     print(data)
+    # 数据正确性检查
+    if data.get('module_custom_id') is None:
+        return jsonify({'fault': 'Bad Data, need module_custom_id'}), 400
+    if data.get('module_custom_name') is None:
+        return jsonify({'fault': 'Bad Data, need module_custom_name'}), 400
+    if data.get('module_custom_desc') is None:
+        return jsonify({'fault': 'Bad Data, need module_custom_desc'}), 400
     # 用户是否登录的检查 #
     # if not session.get('logged_in'):
     #    return jsonify({'fault': 'you have not logged in'}), 403
@@ -376,6 +418,9 @@ def edit_cus_md():
 def delete_cus_md():
     data = request.get_json()
     print(data)
+    # 数据正确性检查
+    if data.get('module_custom_id') is None:
+        return jsonify({'fault': 'Bad Data, need module_custom_id'}), 400
     # 数据库处理
     p = module_custom_table.query.get(int(data['module_custom_id']))
     if p is None:
