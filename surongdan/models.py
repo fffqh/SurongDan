@@ -29,6 +29,12 @@ class project_public_table(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project_table.project_id'), primary_key=True)
     project_user_id = db.Column(db.Integer, db.ForeignKey('user_table.user_id'))
 
+class project_superparam_table(db.Model):
+    __tablename__ = 'project_superparam_table'
+    project_superparam_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    superparam_epoch = db.Column(db.Integer)
+    superparam_batchsize = db.Column(db.Integer)
+    superparam_learnrate = db.Column(db.Float)
 
 class project_table(db.Model):
     __tablename__ = 'project_table'
@@ -55,6 +61,8 @@ class project_table(db.Model):
     project_json = db.Column(db.Text, nullable=True)
     # 缩略图
     project_image = db.Column(db.Text, nullable=True)
+    # 超参数 
+    project_superparam_id = db.Column(db.Integer, db.ForeignKey('project_superparam_table.project_superparam_id'), nullable=True)
 
 
 class layer_table(db.Model):
