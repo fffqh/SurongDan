@@ -61,16 +61,16 @@ def save_structure():
     print(data)
     # 数据正确性检查
     if data.get('project_id') is None:
-        return jsonify({'fault':'Bad Data, need project_id'}), 400 
+        return jsonify({'fault': 'Bad Data, need project_id'}), 400
     if data.get('project_layers') is None:
-        return jsonify({'fault':'Bad Data, need project_layers'}), 400
+        return jsonify({'fault': 'Bad Data, need project_layers'}), 400
     if data.get('project_edges') is None:
         return jsonify({'fault': 'Bad Data, need project_edges'}), 400
     if data.get('project_json') is None:
         return jsonify({'fault': 'Bad Data, need project_json'}), 400
     if data.get('project_image') is None:
         return jsonify({'fault': 'Bad Data, need project_image'}), 400
-    
+
     # 数据库中查项目
     p = project_table.query.get(int(data['project_id']))
     # 检查项目是否存在
@@ -88,16 +88,16 @@ def save_structure():
         # 插入新的layer到数据库中，逐个处理
         for layer in data['project_layers']:
             if layer.get('layer_id') is None:
-                return jsonify({'fault': 'Bad Data, need layer_id'}), 400 
+                return jsonify({'fault': 'Bad Data, need layer_id'}), 400
             if layer.get('layer_module_id') is None:
-                return jsonify({'fault': 'Bad Data, need layer_module_id'}), 400 
+                return jsonify({'fault': 'Bad Data, need layer_module_id'}), 400
             if layer.get('layer_param') is None:
-                return jsonify({'fault': 'Bad Data, need layer_param'}), 400 
-            # 数据库中查该layer对应的module
-            layer_module = module_def_table.query.get(int(data['layer_module_id']))
+                return jsonify({'fault': 'Bad Data, need layer_param'}), 400
+                # 数据库中查该layer对应的module
+            layer_module = module_def_table.query.get(int(layer.get('layer_module_id')))
             if layer_module is None:
-                return jsonify({'fault': 'Bad Data, layer_module_id is invalid'}), 400 
-            # 得到该 module 所需的参数列表
+                return jsonify({'fault': 'Bad Data, layer_module_id is invalid'}), 400
+                # 得到该 module 所需的参数列表
             def_param_list = pickle.loads(layer_module.module_def_param_name_list)
             # 准备空的参数列表
             layer_param_list = []
@@ -107,18 +107,18 @@ def save_structure():
                 isnull = defp.get('isnull')
                 defv = defp.get('value')
                 if (name is None) or (type is None) or (isnull is None):
-                    return jsonify({'fault': 'Bad DataBase, module_def_param_name_list is invalid'}), 400 
-                # 检查request data中是否有该参数
-                p = layer['layer_param'].get(str(name))
-                if p is None and( not bool(isnull) ):
-                    return jsonify({'fault': 'layer_param error, need {}'.format(str(name))}), 400 
-                # 有的，进行更新
-                if p :
-                    layer_param_list.append(p)
+                    return jsonify({'fault': 'Bad DataBase, module_def_param_name_list is invalid'}), 400
+                    # 检查request data中是否有该参数
+                param = layer['layer_param'].get(str(name))
+                if param is None and (not bool(isnull)):
+                    return jsonify({'fault': 'layer_param error, need {}'.format(str(name))}), 400
+                    # 有的，进行更新
+                if param:
+                    layer_param_list.append(param)
                 else:
                     layer_param_list.append(defv)
             new_layer = layer_table(layer_id=str(layer['layer_id']),
-                                    layer_project_id=p.project_id, 
+                                    layer_project_id=p.project_id,
                                     layer_module_id=int(layer['layer_module_id']),
                                     layer_param_list=pickle.dumps(layer_param_list))
             db.session.add(new_layer)
@@ -128,8 +128,8 @@ def save_structure():
         p.project_edge = pickle.dumps(data['project_edges'])
         p.project_image = data['project_image']
         p.project_json = data['project_json']
-    
-    return jsonify({'msg':'ok'}), 201
+
+    return jsonify({'msg': 'ok'}), 201
 
 
 # 复制工程接口：projects/copy_proj
