@@ -62,7 +62,7 @@ class layer_table(db.Model):
     # 联合主键 (网络层id, 项目id)
     layer_id = db.Column(db.String(128), primary_key=True)
     layer_project_id = db.Column(db.Integer, db.ForeignKey('project_table.project_id', ondelete='CASCADE'),
-                                 primary_key=True)
+                                primary_key=True)
     # # 是否为自定义模块
     # layer_is_custom = db.Column(db.Boolean, nullable=False, default=False)
     # 自定义模块id
