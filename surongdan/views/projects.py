@@ -10,7 +10,7 @@ from surongdan.precode import *
 projects_bp = Blueprint('projects', __name__)
 
 
-# 测试 gen_precode
+#测试 gen_precode
 @projects_bp.route('/test_genprecode', methods={'POST'})
 def test_genprecode():
     data = request.get_json()
@@ -18,7 +18,7 @@ def test_genprecode():
     return jsonify({'precode': precode}), 200
 
 
-# 保存工程接口：projects/save_projinfo
+#保存工程接口：projects/save_projinfo
 @projects_bp.route('/save_projinfo', methods={'POST'})
 def save_projinfo():
     config = current_app.config
@@ -31,11 +31,11 @@ def save_projinfo():
     # 数据库处理
     if data['project_is_new']:  # 增加 project_table 中的表项
         p = project_table(project_user_id=int(user_id),
-                          project_name=data['project_name'],
-                          project_info=data['project_info'],
-                          project_dtime=datetime.datetime.now(),
-                          project_outpath=config['SURONG_OUT_PATH'],
-                          project_status='init')
+                        project_name=data['project_name'],
+                        project_info=data['project_info'],
+                        project_dtime=datetime.datetime.now(),
+                        project_outpath=config['SURONG_OUT_PATH'],
+                        project_status='init')
         db.session.add(p)
         db.session.commit()
         if (p.project_id == None):
@@ -141,14 +141,14 @@ def copy_proj():
 
     # 对新项进行赋值
     new_p = project_table(project_user_id=p.project_user_id,
-                          project_name=p.project_name + ' - 副本',
-                          project_info=p.project_info,
-                          project_dtime=p.project_dtime,
-                          project_dataset_id=p.project_dataset_id,
-                          project_outpath=p.project_outpath,
-                          project_code=p.project_code,
-                          project_status=p.project_status,
-                          project_json=p.project_json)
+                        project_name=p.project_name + ' - 副本',
+                        project_info=p.project_info,
+                        project_dtime=p.project_dtime,
+                        project_dataset_id=p.project_dataset_id,
+                        project_outpath=p.project_outpath,
+                        project_code=p.project_code,
+                        project_status=p.project_status,
+                        project_json=p.project_json)
 
     # 依次新建所有的layer
     layer_obj = []  # 存储layer的列表，之后一次性提交所有的数据库更改，便于回滚
@@ -222,10 +222,10 @@ def add_def_md():
     #    return jsonify({'fault': 'User is not an administrator'}), 403
     # 数据库处理
     p = module_def_table(module_def_name=data['module_def_name'],
-                         module_def_desc=data['module_def_desc'],
-                         module_def_param_num=data['module_def_param_num'],
-                         module_def_precode=data['module_def_precode']
-                         )
+                            module_def_desc=data['module_def_desc'],
+                            module_def_param_num=data['module_def_param_num'],
+                            module_def_precode=data['module_def_precode']
+                            )
     with db.auto_commit_db():
         db.session.add(p)
     if p.module_def_id is None:
@@ -422,7 +422,7 @@ def get_def_md():
     def_data = []
     for defs in datas:
         def_data.append({'module_def_id': defs.module_def_id, 'module_def_name': defs.module_def_name,
-                         'module_def_param_num': defs.module_def_param_num})
+                        'module_def_param_num': defs.module_def_param_num})
     return jsonify({'def_data': def_data})
 
 
@@ -434,8 +434,8 @@ def get_cus_md():
     for coss in datas:
         cos_data.append(
             {'module_custom_id': coss.module_custom_id, 'module_custom_name': coss.module_custom_name,
-             'module_custom_desc': coss.module_custom_desc, 'module_custom_param_num': coss.module_custom_param_num, 
-             'module_custom_json': coss.module_custom_json}
+            'module_custom_desc': coss.module_custom_desc, 'module_custom_param_num': coss.module_custom_param_num, 
+            'module_custom_json': coss.module_custom_json}
         )
     return jsonify({'cos_data': cos_data}), 201
 
