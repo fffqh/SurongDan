@@ -9,14 +9,6 @@ from surongdan.precode import *
 
 run_bp = Blueprint('run', __name__)
 
-import_package = "import time \
-import numpy as np \
-from torchvision import transforms \
-from torchvision.datasets import mnist \
-from torch.utils.data import DataLoader \
-import matplotlib.pyplot as plt \
-import torch.nn as nn"
-
 
 
 
