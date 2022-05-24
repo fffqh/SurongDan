@@ -11,7 +11,7 @@ from surongdan.precode import *
 projects_bp = Blueprint('projects', __name__)
 
 
-# 测试 gen_precode
+#测试 gen_precode
 @projects_bp.route('/test_genprecode', methods={'POST'})
 def test_genprecode():
     data = request.get_json()
@@ -19,7 +19,7 @@ def test_genprecode():
     return jsonify({'precode': precode}), 200
 
 
-# 保存工程接口：projects/save_projinfo
+#保存工程接口：projects/save_projinfo
 @projects_bp.route('/save_projinfo', methods={'POST'})
 def save_projinfo():
     config = current_app.config
@@ -32,11 +32,11 @@ def save_projinfo():
     # 数据库处理
     if data['project_is_new']:  # 增加 project_table 中的表项
         p = project_table(project_user_id=int(user_id),
-                          project_name=data['project_name'],
-                          project_info=data['project_info'],
-                          project_dtime=datetime.datetime.now(),
-                          project_outpath=config['SURONG_OUT_PATH'],
-                          project_status='init')
+                        project_name=data['project_name'],
+                        project_info=data['project_info'],
+                        project_dtime=datetime.datetime.now(),
+                        project_outpath=config['SURONG_OUT_PATH'],
+                        project_status='init')
         db.session.add(p)
         db.session.commit()
         if (p.project_id == None):
@@ -446,7 +446,7 @@ def get_def_md():
     def_data = []
     for defs in datas:
         def_data.append({'module_def_id': defs.module_def_id, 'module_def_name': defs.module_def_name,
-                         'module_def_param_num': defs.module_def_param_num})
+                        'module_def_param_num': defs.module_def_param_num})
     return jsonify({'def_data': def_data})
 
 

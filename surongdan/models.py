@@ -29,6 +29,14 @@ class project_public_table(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project_table.project_id'), primary_key=True)
     project_user_id = db.Column(db.Integer, db.ForeignKey('user_table.user_id'))
 
+class project_superparam_table(db.Model):
+    __tablename__ = 'project_superparam_table'
+    project_superparam_id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    superparam_epoch = db.Column(db.Integer)
+    superparam_batchsize = db.Column(db.Integer)
+    superparam_learnrate = db.Column(db.Float)
+    superparam_optim = db.Column(db.String(100))
+    superparam_lossfn = db.Column(db.String(100))
 
 class project_table(db.Model):
     __tablename__ = 'project_table'
@@ -55,6 +63,8 @@ class project_table(db.Model):
     project_json = db.Column(db.Text, nullable=True)
     # 缩略图
     project_image = db.Column(db.Text, nullable=True)
+    # 超参数 
+    project_superparam_id = db.Column(db.Integer, db.ForeignKey('project_superparam_table.project_superparam_id'), nullable=True)
     # 拥有的网络层结构
     layers = db.relationship('layer_table', backref='project_table', lazy='dynamic')
 
@@ -64,7 +74,7 @@ class layer_table(db.Model):
     # 联合主键 (网络层id, 项目id)
     layer_id = db.Column(db.String(128), primary_key=True)
     layer_project_id = db.Column(db.Integer, db.ForeignKey('project_table.project_id', ondelete='CASCADE'),
-                                 primary_key=True)
+                                primary_key=True)
     # # 是否为自定义模块
     # layer_is_custom = db.Column(db.Boolean, nullable=False, default=False)
     # 自定义模块id
