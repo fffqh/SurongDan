@@ -56,7 +56,7 @@ def del_dataset():
         return jsonify({'fault': 'Bad Data, need batch_size'}), 400
     if data.get('optimizer') is None:
         return jsonify({'fault': 'Bad Data, need optimizer'}), 400
-    if data.get('ossfn') is None:
+    if data.get('lossfn') is None:
         return jsonify({'fault': 'Bad Data, need lossfn'}), 400
 
     p = project_table.query.get(int(data['project_id']))
@@ -74,7 +74,7 @@ def del_dataset():
     if superpara is None:
         temp = project_superparam_table(superparam_epoch=int(data['epoch']),
                                         superparam_batchsize=int(data['batch_size']),
-                                        superparam_learnrate=int(data['learn_rate']),
+                                        superparam_learnrate=float(data['learn_rate']),
                                         superparam_optim=data['optimizer'],
                                         superparam_lossfn=data['lossfn'])
         with db.auto_commit_db():
@@ -83,7 +83,7 @@ def del_dataset():
     else:
         superpara.superparam_epoch = int(data['epoch'])
         superpara.superparam_batchsize=int(data['batch_size'])
-        superpara.superparam_learnrate=int(data['learn_rate'])
+        superpara.superparam_learnrate=float(data['learn_rate'])
         superpara.superparam_optim=data['optimizer']
         superpara.superparam_lossfn=data['lossfn']
         db.session.commit()
