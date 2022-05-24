@@ -26,7 +26,7 @@ class user_table(db.Model):
 
 class project_public_table(db.Model):
     __tablename__ = 'project_public_table'
-    project_id = db.Column(db.Integer, db.ForeignKey('project_table.project_id'), primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project_table.project_id', ondelete='CASCADE'), primary_key=True)
     project_user_id = db.Column(db.Integer, db.ForeignKey('user_table.user_id'))
 
 

@@ -173,7 +173,7 @@ def copy_proj():
         if p.project_layer is not None:
             project_layer = pickle.loads(p.project_layer)
             for i in range(len(project_layer)):
-                old_layer = layer_table.query.get([int(project_layer[i]), p.project_id])
+                old_layer = layer_table.query.get([project_layer[i], p.project_id])
                 new_layer = layer_table(layer_id=old_layer.layer_id,
                                         layer_project_id=new_p.project_id,
                                         layer_module_id=old_layer.layer_module_id,
@@ -217,6 +217,9 @@ def delete_proj():
     #    return jsonify({'fault': 'user does not match the project'}), 403
     # 删除数据库中的工程
     with db.auto_commit_db():
+        players = p.layers.all()
+        for player in players:
+            db.session.delete(player)
         db.session.delete(p)
     return jsonify({'msg': "delete successful"}), 200
 
