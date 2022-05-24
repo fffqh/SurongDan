@@ -63,13 +63,10 @@ class project_table(db.Model):
     project_json = db.Column(db.Text, nullable=True)
     # 缩略图
     project_image = db.Column(db.Text, nullable=True)
-<<<<<<< HEAD
     # 超参数 
     project_superparam_id = db.Column(db.Integer, db.ForeignKey('project_superparam_table.project_superparam_id'), nullable=True)
-=======
     # 拥有的网络层结构
     layers = db.relationship('layer_table', backref='project_table', lazy='dynamic')
->>>>>>> develop_common
 
 
 class layer_table(db.Model):
