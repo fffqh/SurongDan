@@ -10,6 +10,7 @@ from surongdan.views.vue import vue_bp
 from surongdan.views.users import users_bp
 from surongdan.views.projects import projects_bp
 from surongdan.views.run import run_bp
+from surongdan.views.hub import hub_bp
 from surongdan.extensions import db, mail_obj
 from surongdan.settings import config
 from surongdan.models import module_def_table, user_table
@@ -41,6 +42,7 @@ def register_blueprints(app):
     app.register_blueprint(users_bp, url_prefix='/users')
     app.register_blueprint(projects_bp, url_prefix='/projects')
     app.register_blueprint(run_bp,url_prefix='/run')
+    app.register_blueprint(hub_bp,url_prefix='/hub')
     app.register_blueprint(vue_bp, url_prefix='')
 
 # 命令注册
@@ -53,6 +55,12 @@ def register_commands(app):
                        user_status=True,
                        user_is_admin=True)
         u.set_password('admin123')
+        db.session.add(u)
+        u = user_table(user_name='user',
+                       user_email='user@qq.com',
+                       user_status=True,
+                       user_is_admin=False)
+        u.set_password('user123')
         db.session.add(u)
         db.session.commit()
         ## 添加默认模块 conv2d，pooling2d，linear，relu
