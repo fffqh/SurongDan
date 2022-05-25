@@ -11,8 +11,7 @@ from api import users
 from api import projects
 from surongdan.extensions import db, mail_obj
 from surongdan.settings import config
-from surongdan.models import module_def_table, user_table ,project_table,dataset_table
-
+from surongdan.models import user_table ,project_table,dataset_table
 
 class BaseTestCase(unittest.TestCase):
     def setUp(self):
