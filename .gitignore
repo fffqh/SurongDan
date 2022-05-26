@@ -5,7 +5,13 @@ pytorch_code/
 __pytarch__
 # 忽略文件
 .env
+.venv
+.idea
 note.md
+__pycache__
+
+surongdan/__pycache__
+surongdan/views/__pycache__
 nohup.out
 templates
 static

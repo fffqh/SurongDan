@@ -13,7 +13,7 @@ from surongdan.views.run import run_bp
 from surongdan.views.hub import hub_bp
 from surongdan.extensions import db, mail_obj
 from surongdan.settings import config
-from surongdan.models import module_def_table, user_table
+from surongdan.models import module_def_table, user_table, project_table,dataset_table
 
 basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 
@@ -21,8 +21,11 @@ basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 def create_app(config_name=None):
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'development')
-
-    app = Flask('bluelog')  # 实例化app
+    
+    app = Flask('bluelog')  # 实例化app    
+    if config_name == 'testing':
+        app.config[ 'SERVER_NAME' ] = "localhost.localdomain:5000"
+   
     app.config.from_object(config[config_name])  # 配置app
     if config_name == 'testing':
         app.config[ 'SERVER_NAME' ] = "localhost.localdomain:5000"
@@ -96,6 +99,29 @@ def register_commands(app):
         # db.session.add(m3)
         # db.session.add(m4)
         # db.session.commit()
+        dataset = dataset_table(
+            dataset_name = 'MINIST',
+            dataset_desc = 'Normal dataset',
+            dataset_path = 'null'
+        )
+        proj = project_table(
+                project_user_id = 1,
+                project_name = 'a proj',
+                project_info ='',
+                project_layer = '',
+                project_edge = '',
+                # 输入输出
+                project_dataset_id = '1',
+                project_outpath = 'E:\Github\SoftwareSever\surong_dan_server\out',
+                # 代码和状态
+                project_code = '',
+                project_status = 'init'
+        )
+        db.session.add(dataset)
+        db.session.commit()
+        db.session.add(proj)
+        db.session.commit()
+
         click.echo("Initialized database.")
 
     @app.cli.command()
@@ -108,7 +134,7 @@ def register_commands(app):
     @app.cli.command()
     def test():
         import unittest
-#         import sys
+        import sys
 #         sys.path.append("..")
         tests = unittest.TestLoader().discover("./tests")
         result = unittest.TextTestRunner(verbosity=2).run(tests)
