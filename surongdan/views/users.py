@@ -103,11 +103,11 @@ def login():
     # 查询用户当前是否重复登录
     name = request.cookies.get('name')
     print(name)
-    if name and session.get('logged_in'):
-        return jsonify({'fault': 'You have already logged in'}), 204
+    # if name and session.get('logged_in'):
+    #     return jsonify({'fault': 'You have already logged in'}), 204
     email_str = r'^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+){0,4}$'
     data = request.get_json()
-    print(data)
+    print(data['user_info'])
     u = None
     if re.match(email_str, data['user_info']):
         u = user_table.query.filter_by(user_email=data['user_info']).first()
@@ -150,3 +150,11 @@ def logout():
     response = jsonify({'info': 'successful logout'})
     response.delete_cookie('name')
     return response, 200
+
+
+@users_bp.route('/isLogin', methods={'GET'})
+def isLogin():
+    if(session.get('user_id') is None):
+        return jsonify({'msg':'Have not login in'}), 403
+    return jsonify({'msg':'ok'}), 200
+

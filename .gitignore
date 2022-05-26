@@ -2,6 +2,7 @@
 PIPENV_VENV_IN_PROJECT/
 data/
 pytorch_code/
+__pytarch__
 # 忽略文件
 .env
 .venv
@@ -11,3 +12,14 @@ __pycache__
 
 surongdan/__pycache__
 surongdan/views/__pycache__
+nohup.out
+templates
+static
+.env
+.venv
+.idea
+
+surongdan/__pycache__
+surongdan/views/__pycache__
+
+note.md
