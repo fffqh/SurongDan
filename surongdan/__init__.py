@@ -30,7 +30,14 @@ def create_app(config_name=None):
     register_extensions(app)
     register_blueprints(app)
     register_commands(app)
+    # 创建code目录
+    mk_codedir(app)
     return app
+
+# 创建code目录
+def mk_codedir(app):
+    if(not os.path.exists(app.config['SURONG_OUT_PATH'])):
+        os.mkdir(app.config['SURONG_OUT_PATH'])
 
 # 模块注册
 def register_extensions(app):

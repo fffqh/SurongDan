@@ -7,6 +7,7 @@ from sqlalchemy import and_
 
 from surongdan.models import project_table, layer_table
 from surongdan.precode import *
+from surongdan.utilits import * 
 
 projects_bp = Blueprint('projects', __name__)
 
@@ -57,6 +58,7 @@ def save_projinfo():
 # 保存工程接口：projects/save_structure
 @projects_bp.route('/save_structure', methods={'POST'})
 def save_structure():
+    config = current_app.config
     data = request.get_json()
     print(data)
     # 数据正确性检查
@@ -76,7 +78,9 @@ def save_structure():
     # 检查项目是否存在
     if p is None:
         return jsonify({'fault': 'project_id is not exist'}), 404
-
+    # 检查项目是否运行
+    if p.project_status == 'running':
+        return jsonify({'fault':'project is running!'}), 403
     # 进入一个数据库事务
     with db.auto_commit_db():
         # 读取项目中所有旧的layer，把它们都删掉！
@@ -128,7 +132,11 @@ def save_structure():
         p.project_edge = pickle.dumps(data['project_edges'])
         p.project_image = data['project_image']
         p.project_json = data['project_json']
-
+        p.project_status = 'init' 
+        # 删除原有目录 
+        del_proj_codedir(config['SURONG_OUT_PATH'], p.project_id)
+        # 建立新的目录
+        mk_proj_codedir(config['SURONG_OUT_PATH'], p.project_id) 
     return jsonify({'msg': 'ok'}), 201
 
 
@@ -466,63 +474,78 @@ def get_cus_md():
         )
     return jsonify({'cos_data': cos_data}), 201
 
-
-# 生成代码
-@projects_bp.route('/generatecode', methods={'POST'})
-def generate_code():
-    # 获得json中的项目id
-    data = request.get_json()
-    pro_id = int(data['project_id'])
-    p = project_table.query.get(pro_id)
+# 获取工程的状态 
+@projects_bp.route('/get_project_status', methods={'GET'})
+def get_project_status():
+    project_id = request.query["project_id"]
+    if project_id is None:
+        return jsonify({'fault':'query data error'}), 400
+    p = project_table.query.get(int(project_id))
     if p is None:
-        return jsonify({'msg': 'project is not exist !'})
+        return jsonify({'fault':'project does not exist'}), 404
+    return jsonify({'proj_status':p.project_status}), 200
 
-    # 读取struct结构
-    pro_struct = pickle.loads(p.project_structure)
-    print(pro_struct)
-    # 准备数据集??
-    # data_set_id = p.project_dataset_id
-    # data_set = dataset_table.query.filter(dataset_table.dataset_id == data_set_id)
-    # data_set_path = str(data_set['dataset_path'])
-    # code集合
-    pro_code = ''
-    # 输出结果路径
-    pro_outpath = str(p.project_outpath)
-    # 遍历struct查找layer_id
-    for layer_id in pro_struct:
-        layer_now = layer_table.query.get(layer_id)
-        if layer_now is None:
-            return jsonify({'fault': 'The layer is not exist'}), 402
-        if int(layer_now.layer_param_num) != len(layer_now.layer_param_list):
-            return jsonify({'fault': 'Parameters is inconsistent with the input module'}), 401
-        # 读取参数
-        layer_n_para = layer_now.layer_param_list
-        if not layer_now.layer_is_custom:
-            # 默认模块处理
-            layer_mod_id = int(layer_now.layer_dm_id)
-            layer_mod = module_def_table.query.get(layer_mod_id)
-            if len(layer_now.param_list) != len(layer_mod.module_def_param_num):
-                return jsonify({'fault': 'Layer_para is inconsistent with the module_para'}), 402
-            layer_n_code = ''
-            layer_n_code = str(layer_mod.module_def_code)
-            for paras in layer_n_para:
-                # 默认参数不大于10个
-                layer_n_code = re.sub(r'\$[0-9]', str(paras), layer_n_code, 1)
-        else:
-            # 自定义模块
-            layer_mod_id = layer_now.layer_cm_id
-            layer_mod = module_custom_table.query.get(layer_mod_id)
-            if len(layer_now.param_list) != len(layer_mod.module_cus_param_num):
-                return jsonify({'fault': 'Layer_para is inconsistent with the module_para'}), 402
-            layer_n_code = ''
-            layer_n_code = str(layer_mod.module_cus_code)
-            for paras in layer_n_para:
-                # 默认参数不大于10个
-                layer_n_code = re.sub(r'\$[0-9]', str(paras), layer_n_code, 1)
-        # 当前layer生成的代码进行保存
-        pro_code = pro_code + layer_n_code + "\n"
-    # 讲生成的代码进行保存到输出路径
-    fb = open(pro_outpath + 'outfile.txt', mode='w', encoding='utf-8')
-    fb.write(pro_code)
-    fb.close()
-    return jsonify({'msg': 'Generate Successful ! At' + pro_outpath + 'outfile.txt'}), 200
+# # 生成代码
+# @projects_bp.route('/generatecode', methods={'POST'})
+# def generate_code():
+#     # 获得json中的项目id
+#     data = request.get_json()
+#     pro_id = int(data['project_id'])
+#     p = project_table.query.get(pro_id)
+#     if p is None:
+#         return jsonify({'msg': 'project is not exist !'})
+
+#     # 读取struct结构
+#     pro_struct = pickle.loads(p.project_structure)
+#     print(pro_struct)
+#     # 准备数据集??
+#     # data_set_id = p.project_dataset_id
+#     # data_set = dataset_table.query.filter(dataset_table.dataset_id == data_set_id)
+#     # data_set_path = str(data_set['dataset_path'])
+#     # code集合
+#     pro_code = ''
+#     # 输出结果路径
+#     pro_outpath = str(p.project_outpath)
+#     # 遍历struct查找layer_id
+#     for layer_id in pro_struct:
+#         layer_now = layer_table.query.get(layer_id)
+#         if layer_now is None:
+#             return jsonify({'fault': 'The layer is not exist'}), 402
+#         if int(layer_now.layer_param_num) != len(layer_now.layer_param_list):
+#             return jsonify({'fault': 'Parameters is inconsistent with the input module'}), 401
+#         # 读取参数
+#         layer_n_para = layer_now.layer_param_list
+#         if not layer_now.layer_is_custom:
+#             # 默认模块处理
+#             layer_mod_id = int(layer_now.layer_dm_id)
+#             layer_mod = module_def_table.query.get(layer_mod_id)
+#             if len(layer_now.param_list) != len(layer_mod.module_def_param_num):
+#                 return jsonify({'fault': 'Layer_para is inconsistent with the module_para'}), 402
+#             layer_n_code = ''
+#             layer_n_code = str(layer_mod.module_def_code)
+#             for paras in layer_n_para:
+#                 # 默认参数不大于10个
+#                 layer_n_code = re.sub(r'\$[0-9]', str(paras), layer_n_code, 1)
+#         else:
+#             # 自定义模块
+#             layer_mod_id = layer_now.layer_cm_id
+#             layer_mod = module_custom_table.query.get(layer_mod_id)
+#             if len(layer_now.param_list) != len(layer_mod.module_cus_param_num):
+#                 return jsonify({'fault': 'Layer_para is inconsistent with the module_para'}), 402
+#             layer_n_code = ''
+#             layer_n_code = str(layer_mod.module_cus_code)
+#             for paras in layer_n_para:
+#                 # 默认参数不大于10个
+#                 layer_n_code = re.sub(r'\$[0-9]', str(paras), layer_n_code, 1)
+#         # 当前layer生成的代码进行保存
+#         pro_code = pro_code + layer_n_code + "\n"
+#     # 讲生成的代码进行保存到输出路径
+#     fb = open(pro_outpath + 'outfile.txt', mode='w', encoding='utf-8')
+#     fb.write(pro_code)
+#     fb.close()
+#     return jsonify({'msg': 'Generate Successful ! At' + pro_outpath + 'outfile.txt'}), 200
+
+
+
+
+

@@ -291,6 +291,15 @@ def gen_code(project_id):
     gen_train_code(project_id, dataset_name)
     print("Genarate train code success!!!!\n")
 
+    # 生成code.py:集合model.py和train.py
+    train_file_path = proj_output+"/train.py"
+    code_file_path = proj_output+"/code.py"
+    model_file = open(model_file_path, "r")
+    train_file = open(train_file_path, "r")
+    code_file = open(code_file_path, "w")
+    code_file.write(model_file.read())
+    code_file.write(train_file.read())
+    model_file.close()
+    train_file.close()
+    code_file.close()
     return True
-
-
