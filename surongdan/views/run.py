@@ -4,27 +4,27 @@ from flask import current_app
 from flask import request, jsonify, Blueprint, session
 from sqlalchemy import and_
 
-from surongdan.models import project_table, layer_table,dataset_table,project_superparam_table
+from surongdan.models import project_table, layer_table, dataset_table, project_superparam_table
 from surongdan.precode import *
 
 run_bp = Blueprint('run', __name__)
 
 
-
-@run_bp.route('/get_dataset_list', methods={'POST','GET'})
+@run_bp.route('/get_dataset_list', methods={'POST', 'GET'})
 def get_dataset_list():
     datas = dataset_table.query.all()
     datalist_data = []
     for dataset in datas:
         datalist_data.append(
             {'dataset_id': dataset.dataset_id,
-             'dataset_name': dataset. dataset_name,
+             'dataset_name': dataset.dataset_name,
              'dataset_desc': dataset.dataset_desc
              }
         )
-    return jsonify({'dataset_list': datalist_data}), 201
+    return jsonify({'dataset': datalist_data}), 200
 
-@run_bp.route('/del_dataset', methods={'POST','GET'})
+
+@run_bp.route('/del_dataset', methods={'POST', 'GET'})
 def del_dataset():
     data = request.get_json()
     print(data)
@@ -39,8 +39,9 @@ def del_dataset():
         db.session.delete(p)
     return jsonify({'msg': 'delete success'}), 200
 
-@run_bp.route('/submit_runinfo', methods={'POST','GET'})
-def del_dataset():
+
+@run_bp.route('/submit_runinfo', methods={'POST', 'GET'})
+def submit_runinfo():
     data = request.get_json()
     print(data)
 
@@ -66,25 +67,30 @@ def del_dataset():
     d = dataset_table.query.get(int(data['dataset_id']))
     if d is None:
         return jsonify({'fault': 'Dataset is not exist'}), 400
+    p.project_dataset_id = int(data['dataset_id'])
+    db.session.commit()
 
     param_id = p.project_superparam_id
 
-    superpara = project_superparam_table.query.get(int(param_id))
-
-    if superpara is None:
+    if param_id is None:
         temp = project_superparam_table(superparam_epoch=int(data['epoch']),
                                         superparam_batchsize=int(data['batch_size']),
                                         superparam_learnrate=float(data['learn_rate']),
                                         superparam_optim=data['optimizer'],
                                         superparam_lossfn=data['lossfn'])
+
         with db.auto_commit_db():
             db.session.add(temp)
-        return jsonify({'superparam has changed'}), 201
-    else:
-        superpara.superparam_epoch = int(data['epoch'])
-        superpara.superparam_batchsize=int(data['batch_size'])
-        superpara.superparam_learnrate=float(data['learn_rate'])
-        superpara.superparam_optim=data['optimizer']
-        superpara.superparam_lossfn=data['lossfn']
+        p.project_superparam_id = temp.project_superparam_id
         db.session.commit()
-        return jsonify({'superparam has saved'}), 201
+
+        return jsonify({'msg': 'superparam has created'}), 201
+    else:
+        superpara = project_superparam_table.query.get(int(param_id))
+        superpara.superparam_epoch = int(data['epoch'])
+        superpara.superparam_batchsize = int(data['batch_size'])
+        superpara.superparam_learnrate = float(data['learn_rate'])
+        superpara.superparam_optim = data['optimizer']
+        superpara.superparam_lossfn = data['lossfn']
+        db.session.commit()
+        return jsonify({'msg': 'superparam has changed'}), 201
